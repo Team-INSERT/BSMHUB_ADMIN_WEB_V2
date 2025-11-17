@@ -1,7 +1,7 @@
 import Cookies from 'js-cookie'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { IconAlertTriangle } from '@tabler/icons-react'
-import { AuthSessionMissingError } from '@supabase/supabase-js'
+import { AuthSessionMissingError, User } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
 import supabase from '@/utils/supabase/client'
 import { Database } from '@/utils/supabase/database.types'
@@ -11,9 +11,28 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
 
+type CachedUserData = {
+  user: User
+  adminStatus: {
+    canAccess: string
+    isReadonly: boolean
+    dashboardOnly: boolean
+  }
+}
+let cachedUserData: CachedUserData | null = null
+
 export const Route = createFileRoute('/_authenticated')({
   component: RouteComponent,
   beforeLoad: async () => {
+    // 같은 사용자로 이미 로드되었다면 캐시된 데이터 반환
+    if (cachedUserData) {
+      return {
+        user: cachedUserData.user,
+        isReadonly: cachedUserData.adminStatus.isReadonly,
+        dashboardOnly: cachedUserData.adminStatus.dashboardOnly,
+      }
+    }
+
     const {
       data: { user },
       error,
@@ -31,6 +50,10 @@ export const Route = createFileRoute('/_authenticated')({
         to: '/403',
       })
     }
+
+    // 이번에 로드한 데이터를 캐시에 저장
+    cachedUserData = { user, adminStatus }
+
     return {
       user,
       isReadonly: adminStatus.isReadonly,
