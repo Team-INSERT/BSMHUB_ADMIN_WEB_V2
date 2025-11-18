@@ -131,13 +131,11 @@ async function decryptPayloadRSA(payload: string, key: CryptoKey) {
 const generationTabs: Array<{
   value: CleanerGenerationTabValue
   label: string
-  helper: string
 }> = [
-  { value: ALL_GENERATIONS_TAB, label: '전체', helper: '모든 기수' },
+  { value: ALL_GENERATIONS_TAB, label: '전체' },
   ...CLEANER_GENERATIONS.map((generation) => ({
     value: generation.value as CleanerGenerationTabValue,
     label: generation.label,
-    helper: `${generation.year}년`,
   })),
 ]
 
@@ -314,12 +312,7 @@ export function StudentDatasetsPanel() {
                 value={String(tab.value)}
                 className='flex-1 rounded-lg data-[state=active]:bg-muted'
               >
-                <div className='flex flex-col items-center text-sm'>
-                  <span className='font-semibold'>{tab.label}</span>
-                  <span className='text-[11px] text-muted-foreground'>
-                    {tab.helper}
-                  </span>
-                </div>
+                <span className='text-sm font-semibold'>{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>

@@ -41,9 +41,17 @@ const createInitialGenerationState = () =>
     {} as Record<CleanerGenerationValue, Record<CleanerDatasetField, File[]>>
   )
 
+const getDefaultGenerationFromYear = (): CleanerGenerationValue => {
+  const targetYear = new Date().getFullYear() - 2
+  const matched = CLEANER_GENERATIONS.find(
+    (generation) => generation.year === targetYear
+  )
+  return (matched?.value ?? DEFAULT_GENERATION) as CleanerGenerationValue
+}
+
 export function DatasetCleaningPanel() {
   const [activeGeneration, setActiveGeneration] =
-    useState<CleanerGenerationValue>(DEFAULT_GENERATION)
+    useState<CleanerGenerationValue>(getDefaultGenerationFromYear)
   const [filesByGeneration, setFilesByGeneration] = useState<
     Record<CleanerGenerationValue, Record<CleanerDatasetField, File[]>>
   >(createInitialGenerationState)
@@ -210,9 +218,6 @@ export function DatasetCleaningPanel() {
                       <div className='flex flex-col items-center'>
                         <span className='text-sm font-semibold'>
                           {generation.label}
-                        </span>
-                        <span className='text-xs text-muted-foreground'>
-                          {generation.year}년
                         </span>
                       </div>
                     </TabsTrigger>
