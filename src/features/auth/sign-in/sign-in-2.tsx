@@ -1,4 +1,4 @@
-import BSMHUB_LOGO from '@/assets/bsmhub-logo.svg'
+import SANDEUL_LOGO from '@/assets/sandeul-logo.svg'
 import { UserAuthForm } from './components/user-auth-form'
 
 export default function SignIn2() {
@@ -19,11 +19,11 @@ export default function SignIn2() {
           >
             <path d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3' />
           </svg>
-          BSMHUB Admin
+            SANDEUL Admin
         </div>
 
         <img
-          src={BSMHUB_LOGO}
+          src={SANDEUL_LOGO}
           className='relative m-auto'
           width={301}
           height={60}

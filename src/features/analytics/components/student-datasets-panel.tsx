@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { IconLoader2, IconRefresh, IconUsersGroup } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { IconLoader2, IconRefresh, IconUsersGroup } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -12,13 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -32,17 +32,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Loader from '@/components/loader'
 import {
+  fetchEncryptedStudents,
+  fetchStudents,
+  type StudentRecord,
+} from '../api'
+import {
   ANALYTICS_DATASETS,
   ANALYTICS_GENERATIONS,
   ALL_GENERATIONS_TAB,
   type AnalyticsGenerationTabValue,
   type AnalyticsGenerationValue,
 } from '../constants'
-import {
-  fetchEncryptedStudents,
-  fetchStudents,
-  type StudentRecord,
-} from '../api'
 
 const datasetLabelMap = ANALYTICS_DATASETS.reduce(
   (acc, dataset) => {
@@ -50,7 +50,7 @@ const datasetLabelMap = ANALYTICS_DATASETS.reduce(
     acc[dataset.field.replace('_file', '')] = dataset.label
     return acc
   },
-  {} as Record<string, string>,
+  {} as Record<string, string>
 )
 
 const subtleCrypto = getSubtleCrypto()
@@ -60,7 +60,8 @@ function getSubtleCrypto(): SubtleCrypto | null {
     return window.crypto.subtle
   }
   if (typeof globalThis !== 'undefined') {
-    const crypto = (globalThis as typeof globalThis & { crypto?: Crypto }).crypto
+    const crypto = (globalThis as typeof globalThis & { crypto?: Crypto })
+      .crypto
     if (crypto?.subtle) return crypto.subtle
   }
   return null
@@ -79,7 +80,7 @@ function base64ToArrayBuffer(base64: string) {
     const buffer = Buffer.from(base64, 'base64')
     return buffer.buffer.slice(
       buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength,
+      buffer.byteOffset + buffer.byteLength
     )
   }
   const binaryString = window.atob(base64)
@@ -104,7 +105,7 @@ async function importPrivateKey(pem: string) {
         hash: 'SHA-256',
       },
       false,
-      ['decrypt'],
+      ['decrypt']
     )
   } catch {
     return null
@@ -120,7 +121,7 @@ async function decryptPayloadRSA(payload: string, key: CryptoKey) {
         name: 'RSA-OAEP',
       },
       key,
-      cipherBuffer,
+      cipherBuffer
     )
     return new TextDecoder().decode(decrypted)
   } catch {
@@ -152,7 +153,7 @@ function extractDecryptedName(text: string) {
   const match = text.match(/"name"\s*:\s*"([^"]*)"/)
   if (match?.[1]) {
     return match[1].replace(/\\u([\dA-Fa-f]{4})/g, (_, code) =>
-      String.fromCharCode(parseInt(code, 16)),
+      String.fromCharCode(parseInt(code, 16))
     )
   }
   return ''
@@ -168,18 +169,13 @@ export function StudentDatasetsPanel() {
   const [showDecryptedColumn, setShowDecryptedColumn] = useState(true)
   const [showHashColumn, setShowHashColumn] = useState(false)
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-    refetch,
-  } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['analytics-students', activeTab],
     queryFn: () =>
       fetchStudents(
         activeTab === ALL_GENERATIONS_TAB
           ? undefined
-          : (activeTab as AnalyticsGenerationValue),
+          : (activeTab as AnalyticsGenerationValue)
       ),
     staleTime: 1000 * 60 * 2,
   })
@@ -197,11 +193,11 @@ export function StudentDatasetsPanel() {
         response.items.map(async (item) => {
           const decrypted = await decryptPayloadRSA(
             item.encrypted_payload,
-            privateKey,
+            privateKey
           )
           const name = extractDecryptedName(decrypted)
           return [item.student_hash, name || '복호화 실패'] as const
-        }),
+        })
       )
       return Object.fromEntries(entries)
     },
@@ -218,7 +214,7 @@ export function StudentDatasetsPanel() {
   const students = data?.students ?? []
   const totalDatasets = useMemo(
     () => students.reduce((acc, student) => acc + student.datasets.length, 0),
-    [students],
+    [students]
   )
 
   useEffect(() => {
@@ -228,174 +224,175 @@ export function StudentDatasetsPanel() {
   return (
     <>
       <Card>
-      <CardHeader>
-        <div className='flex flex-wrap items-center justify-between gap-4'>
-          <div>
-            <CardTitle>학생 데이터 미리보기</CardTitle>
-            <CardDescription>
-              `/students` API에서 조회한 정제 데이터를 기수별로 빠르게 확인하세요.
-            </CardDescription>
+        <CardHeader>
+          <div className='flex flex-wrap items-center justify-between gap-4'>
+            <div>
+              <CardTitle>학생 데이터 미리보기</CardTitle>
+              <CardDescription>
+                `/students` API에서 조회한 정제 데이터를 기수별로 빠르게
+                확인하세요.
+              </CardDescription>
+            </div>
+            <div className='flex flex-1 flex-wrap items-center justify-end gap-3'>
+              <Button
+                type='button'
+                variant='secondary'
+                size='sm'
+                onClick={() => setDecryptDialogOpen(true)}
+              >
+                복호화 설정
+              </Button>
+              <label className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Checkbox
+                  id='show-decrypted'
+                  checked={showDecryptedColumn}
+                  onCheckedChange={(checked) =>
+                    setShowDecryptedColumn(Boolean(checked))
+                  }
+                  disabled={!Object.keys(decryptedMap).length}
+                />
+                복호화 결과 표시
+              </label>
+              <label className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Checkbox
+                  id='show-hash'
+                  checked={showHashColumn}
+                  onCheckedChange={(checked) =>
+                    setShowHashColumn(Boolean(checked))
+                  }
+                />
+                student_hash 표시
+              </label>
+              <label className='flex items-center gap-2 text-sm text-muted-foreground'>
+                <Checkbox
+                  id='condensed-view'
+                  checked={condensedView}
+                  onCheckedChange={(checked) =>
+                    setCondensedView(Boolean(checked))
+                  }
+                />
+                요약 보기
+              </label>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                {isFetching ? (
+                  <IconLoader2 className='mr-2 size-4 animate-spin' />
+                ) : (
+                  <IconRefresh className='mr-2 size-4' />
+                )}
+                새로고침
+              </Button>
+            </div>
           </div>
-          <div className='flex flex-1 flex-wrap items-center justify-end gap-3'>
-            <Button
-              type='button'
-              variant='secondary'
-              size='sm'
-              onClick={() => setDecryptDialogOpen(true)}
-            >
-              복호화 설정
-            </Button>
-            <label className='flex items-center gap-2 text-sm text-muted-foreground'>
-              <Checkbox
-                id='show-decrypted'
-                checked={showDecryptedColumn}
-                onCheckedChange={(checked) =>
-                  setShowDecryptedColumn(Boolean(checked))
-                }
-                disabled={!Object.keys(decryptedMap).length}
-              />
-              복호화 결과 표시
-            </label>
-            <label className='flex items-center gap-2 text-sm text-muted-foreground'>
-              <Checkbox
-                id='show-hash'
-                checked={showHashColumn}
-                onCheckedChange={(checked) =>
-                  setShowHashColumn(Boolean(checked))
-                }
-              />
-              student_hash 표시
-            </label>
-            <label className='flex items-center gap-2 text-sm text-muted-foreground'>
-              <Checkbox
-                id='condensed-view'
-                checked={condensedView}
-                onCheckedChange={(checked) =>
-                  setCondensedView(Boolean(checked))
-                }
-              />
-              요약 보기
-            </label>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          <Tabs
+            value={String(activeTab)}
+            onValueChange={(value) =>
+              setActiveTab(
+                value === ALL_GENERATIONS_TAB
+                  ? ALL_GENERATIONS_TAB
+                  : (Number(value) as AnalyticsGenerationValue)
+              )
+            }
+            className='w-full'
+          >
+            <TabsList className='flex w-full flex-wrap gap-2'>
+              {generationTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={String(tab.value)}
+                  className='flex-1 rounded-lg data-[state=active]:bg-muted'
+                >
+                  <span className='text-sm font-semibold'>{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {generationTabs.map((tab) => (
+              <TabsContent
+                key={tab.value}
+                value={String(tab.value)}
+                className='mt-4 space-y-4'
+              >
+                <SummaryRow
+                  totalStudents={students.length}
+                  totalDatasets={totalDatasets}
+                  generationLabel={
+                    tab.value === ALL_GENERATIONS_TAB ? '전체' : tab.label
+                  }
+                />
+                <StudentTable
+                  students={students}
+                  isLoading={isLoading}
+                  condensedView={condensedView}
+                  decryptedMap={decryptedMap}
+                  showHashColumn={showHashColumn}
+                  showDecryptedColumn={showDecryptedColumn}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
+      <Dialog open={decryptDialogOpen} onOpenChange={setDecryptDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>복호화 키 입력</DialogTitle>
+            <DialogDescription>
+              RSA 4096 / OAEP(SHA-256) 개인 키를 입력한 뒤 복호화를 실행하세요.
+              키는 브라우저 메모리에서만 사용됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4 py-2'>
+            <Input
+              placeholder='-----BEGIN PRIVATE KEY----- ...'
+              value={encryptionKey}
+              onChange={(event) => setEncryptionKey(event.target.value)}
+              className='font-mono'
+            />
+            <p className='text-xs text-muted-foreground'>
+              현재 학생 수: {students.length.toLocaleString()}명
+            </p>
+          </div>
+          <DialogFooter className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
             <Button
               type='button'
               variant='outline'
-              size='sm'
-              onClick={() => refetch()}
-              disabled={isFetching}
+              onClick={() => setDecryptDialogOpen(false)}
             >
-              {isFetching ? (
-                <IconLoader2 className='mr-2 size-4 animate-spin' />
-              ) : (
-                <IconRefresh className='mr-2 size-4' />
-              )}
-              새로고침
+              취소
             </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        <Tabs
-          value={String(activeTab)}
-          onValueChange={(value) =>
-            setActiveTab(
-              value === ALL_GENERATIONS_TAB
-                ? ALL_GENERATIONS_TAB
-                : (Number(value) as AnalyticsGenerationValue),
-            )
-          }
-          className='w-full'
-        >
-          <TabsList className='flex w-full flex-wrap gap-2'>
-            {generationTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={String(tab.value)}
-                className='flex-1 rounded-lg data-[state=active]:bg-muted'
-              >
-                <span className='text-sm font-semibold'>{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {generationTabs.map((tab) => (
-            <TabsContent
-              key={tab.value}
-              value={String(tab.value)}
-              className='mt-4 space-y-4'
+            <Button
+              type='button'
+              onClick={() =>
+                decryptMutation.mutate(students.map((s) => s.student_hash))
+              }
+              disabled={
+                !encryptionKey.trim() ||
+                decryptMutation.isPending ||
+                !students.length ||
+                !subtleCrypto
+              }
             >
-              <SummaryRow
-                totalStudents={students.length}
-                totalDatasets={totalDatasets}
-                generationLabel={
-                  tab.value === ALL_GENERATIONS_TAB ? '전체' : tab.label
-                }
-              />
-              <StudentTable
-                students={students}
-                isLoading={isLoading}
-                condensedView={condensedView}
-                decryptedMap={decryptedMap}
-                showHashColumn={showHashColumn}
-                showDecryptedColumn={showDecryptedColumn}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-    </Card>
-    <Dialog open={decryptDialogOpen} onOpenChange={setDecryptDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>복호화 키 입력</DialogTitle>
-          <DialogDescription>
-            RSA 4096 / OAEP(SHA-256) 개인 키를 입력한 뒤 복호화를 실행하세요. 키는
-            브라우저 메모리에서만 사용됩니다.
-          </DialogDescription>
-        </DialogHeader>
-        <div className='space-y-4 py-2'>
-          <Input
-            placeholder='-----BEGIN PRIVATE KEY----- ...'
-            value={encryptionKey}
-            onChange={(event) => setEncryptionKey(event.target.value)}
-            className='font-mono'
-          />
-          <p className='text-xs text-muted-foreground'>
-            현재 학생 수: {students.length.toLocaleString()}명
-          </p>
-        </div>
-        <DialogFooter className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
-          <Button
-            type='button'
-            variant='outline'
-            onClick={() => setDecryptDialogOpen(false)}
-          >
-            취소
-          </Button>
-          <Button
-            type='button'
-            onClick={() =>
-              decryptMutation.mutate(students.map((s) => s.student_hash))
-            }
-            disabled={
-              !encryptionKey.trim() ||
-              decryptMutation.isPending ||
-              !students.length ||
-              !subtleCrypto
-            }
-          >
-            {decryptMutation.isPending ? (
-              <IconLoader2 className='mr-2 size-4 animate-spin' />
-            ) : null}
-            복호화 실행
-          </Button>
-        </DialogFooter>
-        {!subtleCrypto && (
-          <p className='text-xs text-destructive'>
-            현재 환경에서는 Web Crypto API를 사용할 수 없어 복호화를 실행할 수
-            없습니다.
-          </p>
-        )}
-      </DialogContent>
-    </Dialog>
+              {decryptMutation.isPending ? (
+                <IconLoader2 className='mr-2 size-4 animate-spin' />
+              ) : null}
+              복호화 실행
+            </Button>
+          </DialogFooter>
+          {!subtleCrypto && (
+            <p className='text-xs text-destructive'>
+              현재 환경에서는 Web Crypto API를 사용할 수 없어 복호화를 실행할 수
+              없습니다.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
@@ -417,13 +414,17 @@ function SummaryRow({
         </div>
         <div>
           <p className='text-xs text-muted-foreground'>조회된 학생</p>
-          <p className='text-xl font-semibold'>{totalStudents.toLocaleString()}</p>
+          <p className='text-xl font-semibold'>
+            {totalStudents.toLocaleString()}
+          </p>
         </div>
       </div>
       <Separator className='sm:hidden' />
       <div>
         <p className='text-xs text-muted-foreground'>데이터셋 수</p>
-        <p className='text-xl font-semibold'>{totalDatasets.toLocaleString()}</p>
+        <p className='text-xl font-semibold'>
+          {totalDatasets.toLocaleString()}
+        </p>
       </div>
       <Separator className='sm:hidden' />
       <div>
@@ -460,7 +461,8 @@ function StudentTable({
   if (!students.length) {
     return (
       <div className='rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground'>
-        조회된 학생이 없습니다. 먼저 CSV/Excel 데이터를 업로드한 뒤 다시 시도하세요.
+        조회된 학생이 없습니다. 먼저 CSV/Excel 데이터를 업로드한 뒤 다시
+        시도하세요.
       </div>
     )
   }
@@ -494,9 +496,9 @@ function StudentTable({
       const columnKeys = Array.from(
         new Set(
           dataset.rows.flatMap((row) =>
-            Object.keys((row as Record<string, unknown>) ?? {}),
-          ),
-        ),
+            Object.keys((row as Record<string, unknown>) ?? {})
+          )
+        )
       )
 
       return {
@@ -511,10 +513,7 @@ function StudentTable({
     })
 
     flattenedEntries.push(...entries)
-    studentRowSpans.set(
-      student.student_hash,
-      entries.length || 1,
-    )
+    studentRowSpans.set(student.student_hash, entries.length || 1)
   })
 
   const renderedStudent = new Set<string>()
@@ -554,27 +553,27 @@ function StudentTable({
             return (
               <TableRow key={`${studentHash}-${entry.datasetLabel}-${index}`}>
                 {showStudentCell && (
-              <>
-                <TableCell rowSpan={studentRowSpans.get(studentHash)}>
-                  <code className='rounded bg-muted px-2 py-1 text-xs'>
-                    {studentIndexMap.get(studentHash)}
-                  </code>
-                </TableCell>
-                <TableCell rowSpan={studentRowSpans.get(studentHash)}>
-                  {entry.student.generation}
-                </TableCell>
-                {canShowHashColumn && (
-                  <TableCell rowSpan={studentRowSpans.get(studentHash)}>
-                    <code className='rounded bg-muted px-2 py-1 text-[11px]'>
-                      {studentHash}
-                    </code>
-                  </TableCell>
-                )}
-                {canShowDecryptedColumn && (
-                  <TableCell rowSpan={studentRowSpans.get(studentHash)}>
-                    <span className='text-xs text-muted-foreground'>
-                      {decryptedMap[studentHash] || '-'}
-                    </span>
+                  <>
+                    <TableCell rowSpan={studentRowSpans.get(studentHash)}>
+                      <code className='rounded bg-muted px-2 py-1 text-xs'>
+                        {studentIndexMap.get(studentHash)}
+                      </code>
+                    </TableCell>
+                    <TableCell rowSpan={studentRowSpans.get(studentHash)}>
+                      {entry.student.generation}
+                    </TableCell>
+                    {canShowHashColumn && (
+                      <TableCell rowSpan={studentRowSpans.get(studentHash)}>
+                        <code className='rounded bg-muted px-2 py-1 text-[11px]'>
+                          {studentHash}
+                        </code>
+                      </TableCell>
+                    )}
+                    {canShowDecryptedColumn && (
+                      <TableCell rowSpan={studentRowSpans.get(studentHash)}>
+                        <span className='text-xs text-muted-foreground'>
+                          {decryptedMap[studentHash] || '-'}
+                        </span>
                       </TableCell>
                     )}
                   </>

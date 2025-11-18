@@ -123,7 +123,7 @@ export const getSidebarData = ({
         },
     teams: [
       {
-        name: 'BSMHUB Admin',
+        name: 'SANDEUL Admin',
         logo: Command,
         plan: 'Vite + ShadcnUI',
       },
