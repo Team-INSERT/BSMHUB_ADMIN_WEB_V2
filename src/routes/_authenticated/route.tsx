@@ -37,6 +37,7 @@ export const Route = createFileRoute('/_authenticated')({
       data: { user },
       error,
     } = await supabase.auth.getUser()
+
     if (error instanceof AuthSessionMissingError || !user) {
       throw redirect({
         to: '/sign-in',
@@ -121,6 +122,7 @@ function RouteComponent() {
     </>
   )
 }
+
 async function getAdminStatus(id: string) {
   const { data, error } = await supabase
     .from('web_admin_permission')

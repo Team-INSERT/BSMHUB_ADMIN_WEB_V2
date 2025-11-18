@@ -23,6 +23,15 @@ import { Route as auth500Import } from './routes/(auth)/500'
 // Create Virtual Routes
 
 const AuthenticatedIndexLazyImport = createFileRoute('/_authenticated/')()
+const AuthenticatedCleanerUploadLazyImport = createFileRoute(
+  '/_authenticated/cleaner-upload',
+)()
+const AuthenticatedCleanerInsightsLazyImport = createFileRoute(
+  '/_authenticated/cleaner-insights',
+)()
+const AuthenticatedCleanerLazyImport = createFileRoute(
+  '/_authenticated/cleaner',
+)()
 const errors503LazyImport = createFileRoute('/(errors)/503')()
 const errors500LazyImport = createFileRoute('/(errors)/500')()
 const errors404LazyImport = createFileRoute('/(errors)/404')()
@@ -83,6 +92,34 @@ const AuthenticatedIndexLazyRoute = AuthenticatedIndexLazyImport.update({
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any).lazy(() =>
   import('./routes/_authenticated/index.lazy').then((d) => d.Route),
+)
+
+const AuthenticatedCleanerUploadLazyRoute =
+  AuthenticatedCleanerUploadLazyImport.update({
+    id: '/cleaner-upload',
+    path: '/cleaner-upload',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/_authenticated/cleaner-upload.lazy').then((d) => d.Route),
+  )
+
+const AuthenticatedCleanerInsightsLazyRoute =
+  AuthenticatedCleanerInsightsLazyImport.update({
+    id: '/cleaner-insights',
+    path: '/cleaner-insights',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/_authenticated/cleaner-insights.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const AuthenticatedCleanerLazyRoute = AuthenticatedCleanerLazyImport.update({
+  id: '/cleaner',
+  path: '/cleaner',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any).lazy(() =>
+  import('./routes/_authenticated/cleaner.lazy').then((d) => d.Route),
 )
 
 const errors503LazyRoute = errors503LazyImport
@@ -409,6 +446,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof errors503LazyImport
       parentRoute: typeof rootRoute
     }
+    '/_authenticated/cleaner': {
+      id: '/_authenticated/cleaner'
+      path: '/cleaner'
+      fullPath: '/cleaner'
+      preLoaderRoute: typeof AuthenticatedCleanerLazyImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/cleaner-insights': {
+      id: '/_authenticated/cleaner-insights'
+      path: '/cleaner-insights'
+      fullPath: '/cleaner-insights'
+      preLoaderRoute: typeof AuthenticatedCleanerInsightsLazyImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/cleaner-upload': {
+      id: '/_authenticated/cleaner-upload'
+      path: '/cleaner-upload'
+      fullPath: '/cleaner-upload'
+      preLoaderRoute: typeof AuthenticatedCleanerUploadLazyImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
     '/_authenticated/': {
       id: '/_authenticated/'
       path: '/'
@@ -526,6 +584,9 @@ const AuthenticatedSettingsRouteLazyRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteLazyRoute: typeof AuthenticatedSettingsRouteLazyRouteWithChildren
+  AuthenticatedCleanerLazyRoute: typeof AuthenticatedCleanerLazyRoute
+  AuthenticatedCleanerInsightsLazyRoute: typeof AuthenticatedCleanerInsightsLazyRoute
+  AuthenticatedCleanerUploadLazyRoute: typeof AuthenticatedCleanerUploadLazyRoute
   AuthenticatedIndexLazyRoute: typeof AuthenticatedIndexLazyRoute
   AuthenticatedAppsIndexLazyRoute: typeof AuthenticatedAppsIndexLazyRoute
   AuthenticatedChatsIndexLazyRoute: typeof AuthenticatedChatsIndexLazyRoute
@@ -538,6 +599,9 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteLazyRoute:
     AuthenticatedSettingsRouteLazyRouteWithChildren,
+  AuthenticatedCleanerLazyRoute: AuthenticatedCleanerLazyRoute,
+  AuthenticatedCleanerInsightsLazyRoute: AuthenticatedCleanerInsightsLazyRoute,
+  AuthenticatedCleanerUploadLazyRoute: AuthenticatedCleanerUploadLazyRoute,
   AuthenticatedIndexLazyRoute: AuthenticatedIndexLazyRoute,
   AuthenticatedAppsIndexLazyRoute: AuthenticatedAppsIndexLazyRoute,
   AuthenticatedChatsIndexLazyRoute: AuthenticatedChatsIndexLazyRoute,
@@ -565,6 +629,9 @@ export interface FileRoutesByFullPath {
   '/403': typeof errors403LazyRoute
   '/404': typeof errors404LazyRoute
   '/503': typeof errors503LazyRoute
+  '/cleaner': typeof AuthenticatedCleanerLazyRoute
+  '/cleaner-insights': typeof AuthenticatedCleanerInsightsLazyRoute
+  '/cleaner-upload': typeof AuthenticatedCleanerUploadLazyRoute
   '/': typeof AuthenticatedIndexLazyRoute
   '/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
@@ -592,6 +659,9 @@ export interface FileRoutesByTo {
   '/403': typeof errors403LazyRoute
   '/404': typeof errors404LazyRoute
   '/503': typeof errors503LazyRoute
+  '/cleaner': typeof AuthenticatedCleanerLazyRoute
+  '/cleaner-insights': typeof AuthenticatedCleanerInsightsLazyRoute
+  '/cleaner-upload': typeof AuthenticatedCleanerUploadLazyRoute
   '/': typeof AuthenticatedIndexLazyRoute
   '/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
@@ -623,6 +693,9 @@ export interface FileRoutesById {
   '/(errors)/404': typeof errors404LazyRoute
   '/(errors)/500': typeof errors500LazyRoute
   '/(errors)/503': typeof errors503LazyRoute
+  '/_authenticated/cleaner': typeof AuthenticatedCleanerLazyRoute
+  '/_authenticated/cleaner-insights': typeof AuthenticatedCleanerInsightsLazyRoute
+  '/_authenticated/cleaner-upload': typeof AuthenticatedCleanerUploadLazyRoute
   '/_authenticated/': typeof AuthenticatedIndexLazyRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
@@ -654,6 +727,9 @@ export interface FileRouteTypes {
     | '/403'
     | '/404'
     | '/503'
+    | '/cleaner'
+    | '/cleaner-insights'
+    | '/cleaner-upload'
     | '/'
     | '/settings/account'
     | '/settings/appearance'
@@ -680,6 +756,9 @@ export interface FileRouteTypes {
     | '/403'
     | '/404'
     | '/503'
+    | '/cleaner'
+    | '/cleaner-insights'
+    | '/cleaner-upload'
     | '/'
     | '/settings/account'
     | '/settings/appearance'
@@ -709,6 +788,9 @@ export interface FileRouteTypes {
     | '/(errors)/404'
     | '/(errors)/500'
     | '/(errors)/503'
+    | '/_authenticated/cleaner'
+    | '/_authenticated/cleaner-insights'
+    | '/_authenticated/cleaner-upload'
     | '/_authenticated/'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
@@ -788,6 +870,9 @@ export const routeTree = rootRoute
       "filePath": "_authenticated/route.tsx",
       "children": [
         "/_authenticated/settings",
+        "/_authenticated/cleaner",
+        "/_authenticated/cleaner-insights",
+        "/_authenticated/cleaner-upload",
         "/_authenticated/",
         "/_authenticated/apps/",
         "/_authenticated/chats/",
@@ -846,6 +931,18 @@ export const routeTree = rootRoute
     },
     "/(errors)/503": {
       "filePath": "(errors)/503.lazy.tsx"
+    },
+    "/_authenticated/cleaner": {
+      "filePath": "_authenticated/cleaner.lazy.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/cleaner-insights": {
+      "filePath": "_authenticated/cleaner-insights.lazy.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/cleaner-upload": {
+      "filePath": "_authenticated/cleaner-upload.lazy.tsx",
+      "parent": "/_authenticated"
     },
     "/_authenticated/": {
       "filePath": "_authenticated/index.lazy.tsx",

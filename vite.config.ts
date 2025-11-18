@@ -8,6 +8,7 @@ dotenv.config({ path: '.env.local' })
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/admin',
   plugins: [react(), TanStackRouterVite()],
   server: {
     port: 3000,
@@ -69,6 +70,7 @@ export default defineConfig({
       },
     },
   },
+  preview: { allowedHosts: ['bsmhub-admin.obtuse.kr'] },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
