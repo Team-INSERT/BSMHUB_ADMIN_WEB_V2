@@ -5,7 +5,6 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PredictionPanel } from './components/prediction-panel'
 import { CorrelationPanel } from './components/correlation-panel'
 
 export default function CleanerInsightsPage() {
@@ -58,13 +57,10 @@ export default function CleanerInsightsPage() {
               SANDEUL 모델 인사이트
             </h1>
             <p className='text-sm text-muted-foreground'>
-              학생 단일 예측과 상관분석을 한 곳에서 확인해 모델 성능을 모니터링하세요.
+              상관분석을 통해 모델이 어떤 피처에 민감한지 확인하고 데이터 품질을 개선하세요.
             </p>
           </div>
-          <div className='grid gap-6 lg:grid-cols-2'>
-            <PredictionPanel />
-            <CorrelationPanel />
-          </div>
+          <CorrelationPanel />
         </section>
       </Main>
     </>

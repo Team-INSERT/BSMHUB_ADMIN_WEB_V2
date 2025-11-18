@@ -7,6 +7,7 @@ import {
   IconUsers,
   IconBulb,
   IconBug,
+  IconStars,
 } from '@tabler/icons-react'
 import { User } from '@supabase/supabase-js'
 import { Command } from 'lucide-react'
@@ -43,6 +44,12 @@ export const getSidebarData = ({
     icon: IconTableShortcut,
   }
 
+  const cleanerPredictionItem = {
+    title: '학생 예측',
+    url: '/cleaner-prediction',
+    icon: IconStars,
+  }
+
   const cleanerInsightsItem = {
     title: '모델 인사이트',
     url: '/cleaner-insights',
@@ -57,7 +64,12 @@ export const getSidebarData = ({
 
   const generalItems = [baseDashboardItem, studentItem, companyItem]
 
-  const sandeulItems = [cleanerUploadItem, cleanerDataItem, cleanerInsightsItem]
+  const sandeulItems = [
+    cleanerUploadItem,
+    cleanerDataItem,
+    cleanerPredictionItem,
+    cleanerInsightsItem,
+  ]
 
   const navGroups = dashboardOnly
     ? [
