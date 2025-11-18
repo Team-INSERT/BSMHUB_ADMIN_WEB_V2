@@ -21,6 +21,15 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import {
   fetchAwardCorrelations,
   CertificateDateCorrelationResponse,
   CorrelationResponse,
@@ -354,6 +363,11 @@ export function CorrelationPanel() {
             <p className='text-sm text-muted-foreground'>
               {TAB_META.sqlite.description}
             </p>
+            <CorrelationChart
+              title='상관계수 상위 10개'
+              helper='Absolute 기준 상위 순서'
+              rows={sqliteCorrelations}
+            />
             <CorrelationTable
               rows={sqliteCorrelations}
               isLoading={sqliteLoading}
@@ -378,6 +392,11 @@ export function CorrelationPanel() {
             <p className='text-sm text-muted-foreground'>
               {TAB_META.certificates.description}
             </p>
+            <CorrelationChart
+              title='자격증명 상위 10개'
+              helper='Absolute 기준 상위 순서'
+              rows={certificateCorrelations}
+            />
             <CorrelationTable
               rows={certificateCorrelations}
               isLoading={certificateLoading}
@@ -389,6 +408,11 @@ export function CorrelationPanel() {
             <p className='text-sm text-muted-foreground'>
               {TAB_META['certificate-date'].description}
             </p>
+            <CorrelationChart
+              title='취득일 상관계수'
+              helper='단일 피처 대상'
+              rows={certificateDateCorrelations}
+            />
             <CorrelationTable
               rows={certificateDateCorrelations}
               isLoading={certificateDateLoading}
@@ -400,6 +424,11 @@ export function CorrelationPanel() {
             <p className='text-sm text-muted-foreground'>
               {TAB_META.awards.description}
             </p>
+            <CorrelationChart
+              title='수상명 상위 10개'
+              helper='Absolute 기준 상위 순서'
+              rows={awardCorrelations}
+            />
             <CorrelationTable
               rows={awardCorrelations}
               isLoading={awardLoading}
@@ -500,5 +529,66 @@ function CorrelationTable({
         </TableBody>
       </Table>
     </ScrollArea>
+  )
+}
+
+function CorrelationChart({
+  rows,
+  title,
+  helper,
+}: {
+  rows: NormalizedRow[]
+  title: string
+  helper?: string
+}) {
+  const chartData = useMemo(
+    () =>
+      rows.slice(0, 10).map((row) => ({
+        name: row.label,
+        value:
+          typeof row.absolute === 'number'
+            ? Math.abs(row.absolute)
+            : Math.abs(row.pearson),
+      })),
+    [rows]
+  )
+
+  if (!chartData.length) return null
+
+  return (
+    <div className='rounded-lg border bg-background p-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <div>
+          <p className='text-sm font-medium'>{title}</p>
+          {helper ? (
+            <p className='text-xs text-muted-foreground'>{helper}</p>
+          ) : null}
+        </div>
+        <Badge variant='outline'>{chartData.length}개</Badge>
+      </div>
+      <div className='mt-3 h-64 w-full'>
+        <ResponsiveContainer width='100%' height='100%'>
+          <BarChart
+            data={chartData}
+            layout='vertical'
+            margin={{ top: 8, right: 12, bottom: 8, left: 80 }}
+          >
+            <CartesianGrid strokeDasharray='3 3' />
+            <XAxis type='number' domain={[0, 1]} tickFormatter={(v) => v.toFixed(1)} />
+            <YAxis
+              type='category'
+              dataKey='name'
+              width={120}
+              tick={{ fontSize: 12 }}
+            />
+            <Tooltip
+              formatter={(value: number) => value.toFixed(2)}
+              labelClassName='text-sm font-medium'
+            />
+            <Bar dataKey='value' fill='hsl(var(--primary))' radius={[4, 4, 4, 4]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 }
