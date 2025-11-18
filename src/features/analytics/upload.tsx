@@ -5,9 +5,9 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { StudentDatasetsPanel } from './components/student-datasets-panel'
+import { DatasetCleaningPanel } from './components/dataset-cleaning-panel'
 
-export default function CleanerPage() {
+export default function AnalyticsUploadPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -53,14 +53,14 @@ export default function CleanerPage() {
         <section>
           <div className='mb-4'>
             <h1 className='text-2xl font-semibold tracking-tight'>
-              학생 데이터 브라우저
+              데이터 업로드 허브
             </h1>
             <p className='text-sm text-muted-foreground'>
-              기수별 SANDEUL 학생 데이터를 조회하고 복호화 옵션을 적용해
-              테이블로 검토하세요.
+              기수별 원본 데이터를 업로드하고 Advanced Analytics 파이프라인에 자동
+              정제·적재를 요청하세요.
             </p>
           </div>
-          <StudentDatasetsPanel />
+          <DatasetCleaningPanel />
         </section>
       </Main>
     </>

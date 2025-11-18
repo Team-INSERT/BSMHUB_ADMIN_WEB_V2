@@ -1,4 +1,4 @@
-export const CLEANER_DATASETS = [
+export const ANALYTICS_DATASETS = [
   {
     field: 'attendance_file',
     label: '출결 데이터',
@@ -31,23 +31,23 @@ export const CLEANER_DATASETS = [
   },
 ] as const
 
-export type CleanerDatasetField =
-  (typeof CLEANER_DATASETS)[number]['field']
+export type AnalyticsDatasetField =
+  (typeof ANALYTICS_DATASETS)[number]['field']
 
-export const CLEANER_GENERATIONS = [
+export const ANALYTICS_GENERATIONS = [
   { value: 1, label: '1기', year: 2021 },
   { value: 2, label: '2기', year: 2022 },
   { value: 3, label: '3기', year: 2023 },
   { value: 4, label: '4기', year: 2024 },
 ] as const
 
-export type CleanerGenerationValue =
-  (typeof CLEANER_GENERATIONS)[number]['value']
+export type AnalyticsGenerationValue =
+  (typeof ANALYTICS_GENERATIONS)[number]['value']
 
 export const DEFAULT_GENERATION =
-  CLEANER_GENERATIONS[CLEANER_GENERATIONS.length - 1]?.value ?? 1
+  ANALYTICS_GENERATIONS[ANALYTICS_GENERATIONS.length - 1]?.value ?? 1
 export const SAMPLE_STUDENT_HASH = 'student_hash_demo'
 export const ALL_GENERATIONS_TAB = 'all'
-export type CleanerGenerationTabValue =
-  | CleanerGenerationValue
+export type AnalyticsGenerationTabValue =
+  | AnalyticsGenerationValue
   | typeof ALL_GENERATIONS_TAB

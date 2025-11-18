@@ -15,45 +15,48 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  CLEANER_DATASETS,
-  CLEANER_GENERATIONS,
-  CleanerDatasetField,
-  CleanerGenerationValue,
+  ANALYTICS_DATASETS,
+  ANALYTICS_GENERATIONS,
+  AnalyticsDatasetField,
+  AnalyticsGenerationValue,
   DEFAULT_GENERATION,
 } from '../constants'
 import { requestDatasetCleaning } from '../api'
 
 const createEmptyDatasetMap = () =>
-  CLEANER_DATASETS.reduce(
+  ANALYTICS_DATASETS.reduce(
     (acc, dataset) => {
       acc[dataset.field] = []
       return acc
     },
-    {} as Record<CleanerDatasetField, File[]>
+    {} as Record<AnalyticsDatasetField, File[]>
   )
 
 const createInitialGenerationState = () =>
-  CLEANER_GENERATIONS.reduce(
+  ANALYTICS_GENERATIONS.reduce(
     (acc, generation) => {
       acc[generation.value] = createEmptyDatasetMap()
       return acc
     },
-    {} as Record<CleanerGenerationValue, Record<CleanerDatasetField, File[]>>
+    {} as Record<
+      AnalyticsGenerationValue,
+      Record<AnalyticsDatasetField, File[]>
+    >
   )
 
-const getDefaultGenerationFromYear = (): CleanerGenerationValue => {
+const getDefaultGenerationFromYear = (): AnalyticsGenerationValue => {
   const targetYear = new Date().getFullYear() - 2
-  const matched = CLEANER_GENERATIONS.find(
+  const matched = ANALYTICS_GENERATIONS.find(
     (generation) => generation.year === targetYear
   )
-  return (matched?.value ?? DEFAULT_GENERATION) as CleanerGenerationValue
+  return (matched?.value ?? DEFAULT_GENERATION) as AnalyticsGenerationValue
 }
 
 export function DatasetCleaningPanel() {
   const [activeGeneration, setActiveGeneration] =
-    useState<CleanerGenerationValue>(getDefaultGenerationFromYear)
+    useState<AnalyticsGenerationValue>(getDefaultGenerationFromYear)
   const [filesByGeneration, setFilesByGeneration] = useState<
-    Record<CleanerGenerationValue, Record<CleanerDatasetField, File[]>>
+    Record<AnalyticsGenerationValue, Record<AnalyticsDatasetField, File[]>>
   >(createInitialGenerationState)
 
   const currentFiles =
@@ -97,10 +100,10 @@ export function DatasetCleaningPanel() {
   })
 
   const updateGenerationFiles = (
-    generation: CleanerGenerationValue,
+    generation: AnalyticsGenerationValue,
     updater: (
-      files: Record<CleanerDatasetField, File[]>
-    ) => Record<CleanerDatasetField, File[]>
+      files: Record<AnalyticsDatasetField, File[]>
+    ) => Record<AnalyticsDatasetField, File[]>
   ) => {
     setFilesByGeneration((prev) => ({
       ...prev,
@@ -109,8 +112,8 @@ export function DatasetCleaningPanel() {
   }
 
   const handleFileChange = (
-    generation: CleanerGenerationValue,
-    field: CleanerDatasetField,
+    generation: AnalyticsGenerationValue,
+    field: AnalyticsDatasetField,
     fileList: FileList | null
   ) => {
     if (!fileList?.length) return
@@ -121,8 +124,8 @@ export function DatasetCleaningPanel() {
   }
 
   const removeFile = (
-    generation: CleanerGenerationValue,
-    field: CleanerDatasetField,
+    generation: AnalyticsGenerationValue,
+    field: AnalyticsDatasetField,
     index: number
   ) => {
     updateGenerationFiles(generation, (files) => ({
@@ -132,8 +135,8 @@ export function DatasetCleaningPanel() {
   }
 
   const clearField = (
-    generation: CleanerGenerationValue,
-    field: CleanerDatasetField
+    generation: AnalyticsGenerationValue,
+    field: AnalyticsDatasetField
   ) => {
     updateGenerationFiles(generation, (files) => ({
       ...files,
@@ -159,11 +162,11 @@ export function DatasetCleaningPanel() {
       files: Object.entries(activeFiles).reduce(
         (acc, [field, files]) => {
           if (files.length) {
-            acc[field as CleanerDatasetField] = files
+            acc[field as AnalyticsDatasetField] = files
           }
           return acc
         },
-        {} as Record<CleanerDatasetField, File[]>
+        {} as Record<AnalyticsDatasetField, File[]>
       ),
     })
   }
@@ -173,17 +176,17 @@ export function DatasetCleaningPanel() {
   return (
     <Card>
       <CardHeader className='space-y-3'>
-          <div className='flex items-center justify-between gap-3'>
-            <div>
-              <CardTitle>SANDEUL Cleaner 업로드</CardTitle>
-              <CardDescription>
-                기수와 데이터셋을 선택해 자동 정제 및 SQLite 적재를 실행합니다.
-              </CardDescription>
-            </div>
-            <Badge variant='secondary' className='text-xs'>
-              업로드된 파일 {totalFiles}개
-            </Badge>
+        <div className='flex items-center justify-between gap-3'>
+          <div>
+            <CardTitle>Advanced Analytics 데이터 업로드</CardTitle>
+            <CardDescription>
+              기수와 데이터셋을 선택해 자동 정제 및 SQLite 적재를 실행합니다.
+            </CardDescription>
           </div>
+          <Badge variant='secondary' className='text-xs'>
+            업로드된 파일 {totalFiles}개
+          </Badge>
+        </div>
           <Alert>
             <IconAlertCircle className='size-4 text-muted-foreground' />
             <AlertTitle>여러 파일 업로드 안내</AlertTitle>
@@ -204,12 +207,12 @@ export function DatasetCleaningPanel() {
               <Tabs
                 value={String(activeGeneration)}
                 onValueChange={(value) =>
-                  setActiveGeneration(Number(value) as CleanerGenerationValue)
+                  setActiveGeneration(Number(value) as AnalyticsGenerationValue)
                 }
                 className='space-y-4'
               >
                 <TabsList className='flex w-full flex-wrap gap-2'>
-                  {CLEANER_GENERATIONS.map((generation) => (
+                  {ANALYTICS_GENERATIONS.map((generation) => (
                     <TabsTrigger
                       key={generation.value}
                       value={String(generation.value)}
@@ -223,29 +226,29 @@ export function DatasetCleaningPanel() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                {CLEANER_GENERATIONS.map((generation) => (
+                {ANALYTICS_GENERATIONS.map((generation) => (
                   <TabsContent key={generation.value} value={String(generation.value)}>
                     <KanbanBoard
-                      generation={generation.value as CleanerGenerationValue}
+                      generation={generation.value as AnalyticsGenerationValue}
                       files={filesByGeneration[generation.value]}
                       disabled={isSubmitting}
                       onFileAdd={(field, list) =>
                         handleFileChange(
-                          generation.value as CleanerGenerationValue,
+                          generation.value as AnalyticsGenerationValue,
                           field,
                           list
                         )
                       }
                       onRemoveFile={(field, index) =>
                         removeFile(
-                          generation.value as CleanerGenerationValue,
+                          generation.value as AnalyticsGenerationValue,
                           field,
                           index
                         )
                       }
                       onClear={(field) =>
                         clearField(
-                          generation.value as CleanerGenerationValue,
+                          generation.value as AnalyticsGenerationValue,
                           field
                         )
                       }
@@ -290,12 +293,12 @@ export function DatasetCleaningPanel() {
 }
 
 type KanbanBoardProps = {
-  generation: CleanerGenerationValue
-  files: Record<CleanerDatasetField, File[]>
+  generation: AnalyticsGenerationValue
+  files: Record<AnalyticsDatasetField, File[]>
   disabled: boolean
-  onFileAdd: (field: CleanerDatasetField, files: FileList | null) => void
-  onRemoveFile: (field: CleanerDatasetField, index: number) => void
-  onClear: (field: CleanerDatasetField) => void
+  onFileAdd: (field: AnalyticsDatasetField, files: FileList | null) => void
+  onRemoveFile: (field: AnalyticsDatasetField, index: number) => void
+  onClear: (field: AnalyticsDatasetField) => void
 }
 
 function KanbanBoard({
@@ -309,7 +312,7 @@ function KanbanBoard({
   return (
     <ScrollArea orientation='horizontal' className='w-full'>
       <div className='flex min-w-full gap-4 pb-2'>
-        {CLEANER_DATASETS.map((dataset) => (
+        {ANALYTICS_DATASETS.map((dataset) => (
           <KanbanColumn
             key={`${generation}-${dataset.field}`}
             dataset={dataset}
@@ -327,10 +330,10 @@ function KanbanBoard({
 }
 
 type KanbanColumnProps = {
-  dataset: (typeof CLEANER_DATASETS)[number]
+  dataset: (typeof ANALYTICS_DATASETS)[number]
   files: File[]
   disabled: boolean
-  generation: CleanerGenerationValue
+  generation: AnalyticsGenerationValue
   onFileAdd: (files: FileList | null) => void
   onRemoveFile: (index: number) => void
   onClear: () => void

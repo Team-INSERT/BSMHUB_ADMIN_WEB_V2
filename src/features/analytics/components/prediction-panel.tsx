@@ -59,7 +59,7 @@ export function PredictionPanel() {
       <CardHeader>
         <CardTitle>학생 단일 예측</CardTitle>
         <CardDescription>
-          학생 해시를 입력하면 현재 배포된 SANDEUL 모델이 성적 예측을 반환합니다.
+          학생 해시를 입력하면 Advanced Analytics 모델이 성적 예측을 반환합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-5'>

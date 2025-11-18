@@ -7,7 +7,7 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PredictionPanel } from './components/prediction-panel'
 
-export default function CleanerPredictionPage() {
+export default function AnalyticsPredictionPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function CleanerPredictionPage() {
               학생 단일 예측
             </h1>
             <p className='text-sm text-muted-foreground'>
-              학생 해시로 SANDEUL 모델을 호출해 단일 예측 결과를 확인합니다.
+              학생 해시로 Advanced Analytics 모델을 호출해 단일 예측 결과를 확인합니다.
             </p>
           </div>
           <PredictionPanel />

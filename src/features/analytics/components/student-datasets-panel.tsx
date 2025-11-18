@@ -32,11 +32,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Loader from '@/components/loader'
 import {
-  CLEANER_DATASETS,
-  CLEANER_GENERATIONS,
+  ANALYTICS_DATASETS,
+  ANALYTICS_GENERATIONS,
   ALL_GENERATIONS_TAB,
-  type CleanerGenerationTabValue,
-  type CleanerGenerationValue,
+  type AnalyticsGenerationTabValue,
+  type AnalyticsGenerationValue,
 } from '../constants'
 import {
   fetchEncryptedStudents,
@@ -44,7 +44,7 @@ import {
   type StudentRecord,
 } from '../api'
 
-const datasetLabelMap = CLEANER_DATASETS.reduce(
+const datasetLabelMap = ANALYTICS_DATASETS.reduce(
   (acc, dataset) => {
     acc[dataset.field] = dataset.label
     acc[dataset.field.replace('_file', '')] = dataset.label
@@ -129,12 +129,12 @@ async function decryptPayloadRSA(payload: string, key: CryptoKey) {
 }
 
 const generationTabs: Array<{
-  value: CleanerGenerationTabValue
+  value: AnalyticsGenerationTabValue
   label: string
 }> = [
   { value: ALL_GENERATIONS_TAB, label: '전체' },
-  ...CLEANER_GENERATIONS.map((generation) => ({
-    value: generation.value as CleanerGenerationTabValue,
+  ...ANALYTICS_GENERATIONS.map((generation) => ({
+    value: generation.value as AnalyticsGenerationTabValue,
     label: generation.label,
   })),
 ]
@@ -160,7 +160,7 @@ function extractDecryptedName(text: string) {
 
 export function StudentDatasetsPanel() {
   const [activeTab, setActiveTab] =
-    useState<CleanerGenerationTabValue>(ALL_GENERATIONS_TAB)
+    useState<AnalyticsGenerationTabValue>(ALL_GENERATIONS_TAB)
   const [condensedView, setCondensedView] = useState(true)
   const [encryptionKey, setEncryptionKey] = useState('')
   const [decryptedMap, setDecryptedMap] = useState<Record<string, string>>({})
@@ -174,12 +174,12 @@ export function StudentDatasetsPanel() {
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ['cleaner-students', activeTab],
+    queryKey: ['analytics-students', activeTab],
     queryFn: () =>
       fetchStudents(
         activeTab === ALL_GENERATIONS_TAB
           ? undefined
-          : (activeTab as CleanerGenerationValue),
+          : (activeTab as AnalyticsGenerationValue),
       ),
     staleTime: 1000 * 60 * 2,
   })
@@ -300,7 +300,7 @@ export function StudentDatasetsPanel() {
             setActiveTab(
               value === ALL_GENERATIONS_TAB
                 ? ALL_GENERATIONS_TAB
-                : (Number(value) as CleanerGenerationValue),
+                : (Number(value) as AnalyticsGenerationValue),
             )
           }
           className='w-full'

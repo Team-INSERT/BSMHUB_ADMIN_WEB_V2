@@ -1,10 +1,13 @@
-import { CleanerDatasetField } from './constants'
+import {
+  AnalyticsDatasetField,
+  AnalyticsGenerationValue,
+} from './constants'
 
-const CLEANER_API_BASE = (
+const ANALYTICS_API_BASE = (
   import.meta.env.VITE_CLEANER_API_BASE || 'http://localhost:8000'
 ).replace(/\/$/, '')
 
-const buildUrl = (path: string) => `${CLEANER_API_BASE}${path}`
+const buildUrl = (path: string) => `${ANALYTICS_API_BASE}${path}`
 
 type FetchOptions = RequestInit & { parse?: 'json' | 'text' }
 
@@ -39,7 +42,7 @@ async function handleResponse<T>(response: Response, parse: 'json' | 'text') {
   return parseBody()
 }
 
-async function cleanerFetch<T>(
+async function analyticsFetch<T>(
   path: string,
   { parse = 'json', ...options }: FetchOptions = {}
 ) {
@@ -51,7 +54,7 @@ async function cleanerFetch<T>(
 
 export type CleanRequestPayload = {
   generation: number
-  files: Partial<Record<CleanerDatasetField, File[]>>
+  files: Partial<Record<AnalyticsDatasetField, File[]>>
 }
 
 export type CleanResult = {
@@ -86,7 +89,7 @@ export async function requestDatasetCleaning({
     })
   })
 
-  return cleanerFetch<CleanResponse>('/clean', {
+  return analyticsFetch<CleanResponse>('/clean', {
     method: 'POST',
     body: formData,
   })
@@ -106,7 +109,7 @@ export type PredictionResponse = {
 }
 
 export async function requestStudentPrediction(studentHash: string) {
-  return cleanerFetch<PredictionResponse>('/predict', {
+  return analyticsFetch<PredictionResponse>('/predict', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -130,7 +133,7 @@ export type CorrelationResponse = {
 
 export async function fetchCorrelations(generation?: number) {
   const search = generation ? `?generation=${generation}` : ''
-  return cleanerFetch<CorrelationResponse>(
+  return analyticsFetch<CorrelationResponse>(
     `/analytics/correlations/sqlite${search}`
   )
 }
@@ -159,7 +162,7 @@ export type NamedCorrelationResponse = {
 
 export async function fetchCertificateCorrelations(generation?: number) {
   const search = generation ? `?generation=${generation}` : ''
-  return cleanerFetch<NamedCorrelationResponse>(
+  return analyticsFetch<NamedCorrelationResponse>(
     `/analytics/certificates/correlations${search}`
   )
 }
@@ -174,14 +177,14 @@ export type CertificateDateCorrelationResponse = {
 
 export async function fetchCertificateDateCorrelation(generation?: number) {
   const search = generation ? `?generation=${generation}` : ''
-  return cleanerFetch<CertificateDateCorrelationResponse>(
+  return analyticsFetch<CertificateDateCorrelationResponse>(
     `/analytics/certificates/correlation-by-date${search}`
   )
 }
 
 export async function fetchAwardCorrelations(generation?: number) {
   const search = generation ? `?generation=${generation}` : ''
-  return cleanerFetch<NamedCorrelationResponse>(
+  return analyticsFetch<NamedCorrelationResponse>(
     `/analytics/awards/correlations${search}`
   )
 }
@@ -205,14 +208,14 @@ export type StudentsResponse = {
   students: StudentRecord[]
 }
 
-export async function fetchStudents(generation?: number) {
+export async function fetchStudents(generation?: AnalyticsGenerationValue) {
   const searchParams = new URLSearchParams()
   if (generation) {
     searchParams.set('generation', String(generation))
   }
   const search = searchParams.toString()
   const path = `/students${search ? `?${search}` : ''}`
-  return cleanerFetch<StudentsResponse>(path)
+  return analyticsFetch<StudentsResponse>(path)
 }
 
 export type EncryptedStudentPayload = {
@@ -226,7 +229,7 @@ export type StudentsEncryptedResponse = {
 }
 
 export async function fetchEncryptedStudents(studentHashes: string[]) {
-  return cleanerFetch<StudentsEncryptedResponse>('/students/encrypted', {
+  return analyticsFetch<StudentsEncryptedResponse>('/students/encrypted', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -235,4 +238,4 @@ export async function fetchEncryptedStudents(studentHashes: string[]) {
   })
 }
 
-export { CLEANER_API_BASE }
+export { ANALYTICS_API_BASE }

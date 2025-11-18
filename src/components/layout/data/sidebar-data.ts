@@ -32,27 +32,27 @@ export const getSidebarData = ({
     icon: IconUsers,
   }
 
-  const cleanerUploadItem = {
+  const analyticsUploadItem = {
     title: '데이터 업로드',
-    url: '/cleaner-upload',
+    url: '/analytics-upload',
     icon: IconCloudUpload,
   }
 
-  const cleanerDataItem = {
+  const analyticsDataItem = {
     title: '학생 데이터',
-    url: '/cleaner',
+    url: '/analytics-data',
     icon: IconTableShortcut,
   }
 
-  const cleanerPredictionItem = {
+  const analyticsPredictionItem = {
     title: '학생 예측',
-    url: '/cleaner-prediction',
+    url: '/analytics-prediction',
     icon: IconStars,
   }
 
-  const cleanerInsightsItem = {
+  const analyticsInsightsItem = {
     title: '모델 인사이트',
-    url: '/cleaner-insights',
+    url: '/analytics-insights',
     icon: IconChartHistogram,
   }
 
@@ -64,11 +64,11 @@ export const getSidebarData = ({
 
   const generalItems = [baseDashboardItem, studentItem, companyItem]
 
-  const sandeulItems = [
-    cleanerUploadItem,
-    cleanerDataItem,
-    cleanerPredictionItem,
-    cleanerInsightsItem,
+  const analyticsNavItems = [
+    analyticsUploadItem,
+    analyticsDataItem,
+    analyticsPredictionItem,
+    analyticsInsightsItem,
   ]
 
   const navGroups = dashboardOnly
@@ -86,9 +86,9 @@ export const getSidebarData = ({
           items: generalItems as any,
         },
         {
-          title: 'SANDEUL',
+          title: 'Advanced Analytics',
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          items: sandeulItems as any,
+          items: analyticsNavItems as any,
         },
         {
           title: '피드백',

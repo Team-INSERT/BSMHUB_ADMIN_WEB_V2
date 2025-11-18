@@ -5,9 +5,9 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CorrelationPanel } from './components/correlation-panel'
+import { StudentDatasetsPanel } from './components/student-datasets-panel'
 
-export default function CleanerInsightsPage() {
+export default function AnalyticsDataPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -31,8 +31,7 @@ export default function CleanerInsightsPage() {
               <Skeleton className='h-8 w-64' />
               <Skeleton className='mt-2 h-4 w-96' />
             </div>
-            <div className='grid gap-6 lg:grid-cols-2'>
-              <Skeleton className='h-[600px] w-full rounded-lg' />
+            <div className='space-y-4'>
               <Skeleton className='h-[600px] w-full rounded-lg' />
             </div>
           </section>
@@ -54,13 +53,14 @@ export default function CleanerInsightsPage() {
         <section>
           <div className='mb-4'>
             <h1 className='text-2xl font-semibold tracking-tight'>
-              SANDEUL 모델 인사이트
+              학생 데이터 브라우저
             </h1>
             <p className='text-sm text-muted-foreground'>
-              상관분석을 통해 모델이 어떤 피처에 민감한지 확인하고 데이터 품질을 개선하세요.
+              기수별 Advanced Analytics 학생 데이터를 조회하고 복호화 옵션을 적용해
+              테이블로 검토하세요.
             </p>
           </div>
-          <CorrelationPanel />
+          <StudentDatasetsPanel />
         </section>
       </Main>
     </>

@@ -5,9 +5,9 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { DatasetCleaningPanel } from './components/dataset-cleaning-panel'
+import { CorrelationPanel } from './components/correlation-panel'
 
-export default function CleanerUploadPage() {
+export default function AnalyticsInsightsPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -31,7 +31,8 @@ export default function CleanerUploadPage() {
               <Skeleton className='h-8 w-64' />
               <Skeleton className='mt-2 h-4 w-96' />
             </div>
-            <div className='space-y-4'>
+            <div className='grid gap-6 lg:grid-cols-2'>
+              <Skeleton className='h-[600px] w-full rounded-lg' />
               <Skeleton className='h-[600px] w-full rounded-lg' />
             </div>
           </section>
@@ -53,14 +54,13 @@ export default function CleanerUploadPage() {
         <section>
           <div className='mb-4'>
             <h1 className='text-2xl font-semibold tracking-tight'>
-              데이터 업로드 허브
+              Advanced Analytics 인사이트
             </h1>
             <p className='text-sm text-muted-foreground'>
-              기수별 원본 데이터를 업로드하고 SANDEUL 파이프라인에 자동 정제·적재를
-              요청하세요.
+              상관분석을 통해 모델이 어떤 피처에 민감한지 확인하고 데이터 품질을 개선하세요.
             </p>
           </div>
-          <DatasetCleaningPanel />
+          <CorrelationPanel />
         </section>
       </Main>
     </>
