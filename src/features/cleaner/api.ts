@@ -121,17 +121,69 @@ export type CorrelationResponse = {
   rows_used: number
   features_analyzed: number
   skipped_features: string[]
-  correlations: Array<{
-    feature: string
-    pearson: number
-    absolute: number
-    overlap_rows: number
-  }>
+  correlations: Array<
+    Correlation & {
+      feature: string
+    }
+  >
 }
 
 export async function fetchCorrelations(generation?: number) {
   const search = generation ? `?generation=${generation}` : ''
-  return cleanerFetch<CorrelationResponse>(`/analytics/correlation${search}`)
+  return cleanerFetch<CorrelationResponse>(
+    `/analytics/correlations/sqlite${search}`
+  )
+}
+
+export type Correlation = {
+  pearson: number
+  absolute?: number
+  overlap_rows?: number
+}
+
+export type NamedCorrelation = Correlation & {
+  name?: string
+  certificate_name?: string
+  certificate?: string
+  award_name?: string
+  award?: string
+  feature?: string
+  label?: string
+  sample_size?: number
+}
+
+export type NamedCorrelationResponse = {
+  generation?: number
+  correlations: NamedCorrelation[]
+}
+
+export async function fetchCertificateCorrelations(generation?: number) {
+  const search = generation ? `?generation=${generation}` : ''
+  return cleanerFetch<NamedCorrelationResponse>(
+    `/analytics/certificates/correlations${search}`
+  )
+}
+
+export type CertificateDateCorrelationResponse = {
+  generation?: number
+  correlation?: Correlation & {
+    feature?: string
+    name?: string
+  }
+}
+
+export async function fetchCertificateDateCorrelation(generation?: number) {
+  const search = generation ? `?generation=${generation}` : ''
+  return cleanerFetch<CertificateDateCorrelationResponse>(
+    `/analytics/certificates/correlation-by-date${search}`
+  )
+}
+
+export async function fetchAwardCorrelations(generation?: number) {
+  const search = generation ? `?generation=${generation}` : ''
+  return cleanerFetch<NamedCorrelationResponse>(
+    `/analytics/awards/correlations${search}`
+  )
 }
 
 export type StudentDataset = {
