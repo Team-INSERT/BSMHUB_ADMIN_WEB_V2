@@ -24,6 +24,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -367,6 +368,13 @@ export function CorrelationPanel() {
               title='상관계수 상위 10개'
               helper='Absolute 기준 상위 순서'
               rows={sqliteCorrelations}
+              metric='absolute'
+            />
+            <CorrelationChart
+              title='피어슨 계수 (부호 포함)'
+              helper='값이 +1에 가까울수록 양의 상관, -1에 가까울수록 음의 상관'
+              rows={sqliteCorrelations}
+              metric='pearson'
             />
             <CorrelationTable
               rows={sqliteCorrelations}
@@ -396,6 +404,13 @@ export function CorrelationPanel() {
               title='자격증명 상위 10개'
               helper='Absolute 기준 상위 순서'
               rows={certificateCorrelations}
+              metric='absolute'
+            />
+            <CorrelationChart
+              title='자격증명 피어슨 계수'
+              helper='부호를 포함해 취업과의 상관 정도를 확인합니다.'
+              rows={certificateCorrelations}
+              metric='pearson'
             />
             <CorrelationTable
               rows={certificateCorrelations}
@@ -412,6 +427,13 @@ export function CorrelationPanel() {
               title='취득일 상관계수'
               helper='단일 피처 대상'
               rows={certificateDateCorrelations}
+              metric='absolute'
+            />
+            <CorrelationChart
+              title='취득일 피어슨 계수'
+              helper='음/양의 상관을 함께 확인하세요.'
+              rows={certificateDateCorrelations}
+              metric='pearson'
             />
             <CorrelationTable
               rows={certificateDateCorrelations}
@@ -428,6 +450,13 @@ export function CorrelationPanel() {
               title='수상명 상위 10개'
               helper='Absolute 기준 상위 순서'
               rows={awardCorrelations}
+              metric='absolute'
+            />
+            <CorrelationChart
+              title='수상명 피어슨 계수'
+              helper='부호를 포함해 확인'
+              rows={awardCorrelations}
+              metric='pearson'
             />
             <CorrelationTable
               rows={awardCorrelations}
@@ -536,24 +565,30 @@ function CorrelationChart({
   rows,
   title,
   helper,
+  metric = 'absolute',
 }: {
   rows: NormalizedRow[]
   title: string
   helper?: string
+  metric?: 'absolute' | 'pearson'
 }) {
   const chartData = useMemo(
     () =>
       rows.slice(0, 10).map((row) => ({
         name: row.label,
         value:
-          typeof row.absolute === 'number'
-            ? Math.abs(row.absolute)
-            : Math.abs(row.pearson),
+          metric === 'absolute'
+            ? typeof row.absolute === 'number'
+              ? Math.abs(row.absolute)
+              : Math.abs(row.pearson)
+            : row.pearson,
       })),
-    [rows]
+    [metric, rows]
   )
 
   if (!chartData.length) return null
+
+  const domain = metric === 'pearson' ? [-1, 1] : [0, 1]
 
   return (
     <div className='rounded-lg border bg-background p-4'>
@@ -574,7 +609,7 @@ function CorrelationChart({
             margin={{ top: 8, right: 12, bottom: 8, left: 80 }}
           >
             <CartesianGrid strokeDasharray='3 3' />
-            <XAxis type='number' domain={[0, 1]} tickFormatter={(v) => v.toFixed(1)} />
+            <XAxis type='number' domain={domain} tickFormatter={(v) => v.toFixed(1)} />
             <YAxis
               type='category'
               dataKey='name'
@@ -585,7 +620,24 @@ function CorrelationChart({
               formatter={(value: number) => value.toFixed(2)}
               labelClassName='text-sm font-medium'
             />
-            <Bar dataKey='value' fill='hsl(var(--primary))' radius={[4, 4, 4, 4]} />
+            <Bar
+              dataKey='value'
+              fill={metric === 'pearson' ? undefined : 'hsl(var(--primary))'}
+              radius={[4, 4, 4, 4]}
+            >
+              {metric === 'pearson'
+                ? chartData.map((entry) => (
+                    <Cell
+                      key={entry.name}
+                      fill={
+                        entry.value >= 0
+                          ? 'hsl(var(--primary))'
+                          : 'hsl(var(--destructive))'
+                      }
+                    />
+                  ))
+                : null}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
