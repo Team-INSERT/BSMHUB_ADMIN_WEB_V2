@@ -127,6 +127,7 @@ export type CorrelationResponse = {
   correlations: Array<
     Correlation & {
       feature: string
+      feature_label?: string
     }
   >
 }

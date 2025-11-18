@@ -86,6 +86,7 @@ const TAB_ORDER: TabValue[] = [
 
 const resolveLabel = (record: Record<string, unknown>) => {
   const candidate =
+    record.feature_label ||
     record.name ||
     record.feature ||
     record.certificate_name ||
