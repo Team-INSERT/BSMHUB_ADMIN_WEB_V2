@@ -41,7 +41,14 @@ import {
 } from '../api'
 
 type Mode = 'all' | 'custom'
-type TabValue = 'sqlite' | 'certificates' | 'certificate-date' | 'awards'
+type TabValue =
+  | 'overview'
+  | 'sqlite'
+  | 'certificates'
+  | 'certificate-date'
+  | 'awards'
+
+type CorrelationSource = Exclude<TabValue, 'overview'>
 
 type NormalizedRow = {
   label: string
@@ -49,6 +56,7 @@ type NormalizedRow = {
   absolute?: number
   overlap_rows?: number
   sample_size?: number
+  source?: CorrelationSource
 }
 
 const TAB_META: Record<
@@ -58,6 +66,10 @@ const TAB_META: Record<
     description: string
   }
 > = {
+  overview: {
+    label: '전체',
+    description: '모든 상관관계 결과를 한 곳에서 비교합니다.',
+  },
   sqlite: {
     label: '전체 피처',
     description: 'SQLite에 적재된 전 피처를 기반으로 한 상관계수',
@@ -78,6 +90,7 @@ const TAB_META: Record<
 }
 
 const TAB_ORDER: TabValue[] = [
+  'overview',
   'sqlite',
   'certificates',
   'certificate-date',
@@ -100,7 +113,13 @@ const resolveLabel = (record: Record<string, unknown>) => {
   return '알 수 없음'
 }
 
-const normalizeRows = (rows?: unknown[]) => {
+const sortByAbsolute = (a: NormalizedRow, b: NormalizedRow) => {
+  const aAbs = typeof a.absolute === 'number' ? Math.abs(a.absolute) : Math.abs(a.pearson)
+  const bAbs = typeof b.absolute === 'number' ? Math.abs(b.absolute) : Math.abs(b.pearson)
+  return bAbs - aAbs
+}
+
+const normalizeRows = (rows?: unknown[], source?: CorrelationSource) => {
   if (!rows?.length) return []
   const normalized: NormalizedRow[] = []
   rows.forEach((row) => {
@@ -120,16 +139,11 @@ const normalizeRows = (rows?: unknown[]) => {
         typeof record.sample_size === 'number'
           ? record.sample_size
           : undefined,
+      source,
     })
   })
 
-  return normalized.sort((a, b) => {
-    const aAbs =
-      typeof a.absolute === 'number' ? a.absolute : Math.abs(a.pearson)
-    const bAbs =
-      typeof b.absolute === 'number' ? b.absolute : Math.abs(b.pearson)
-    return bAbs - aAbs
-  })
+  return normalized.sort(sortByAbsolute)
 }
 
 export function CorrelationPanel() {
@@ -138,7 +152,7 @@ export function CorrelationPanel() {
   const [applied, setApplied] = useState<{ mode: Mode; generation?: number }>(
     { mode: 'all' }
   )
-  const [tab, setTab] = useState<TabValue>('sqlite')
+  const [tab, setTab] = useState<TabValue>('overview')
 
   const generation = applied.mode === 'custom' ? applied.generation : undefined
 
@@ -226,11 +240,11 @@ export function CorrelationPanel() {
   }
 
   const sqliteCorrelations = useMemo(
-    () => normalizeRows(sqliteQuery.data?.correlations),
+    () => normalizeRows(sqliteQuery.data?.correlations, 'sqlite'),
     [sqliteQuery.data?.correlations]
   )
   const certificateCorrelations = useMemo(
-    () => normalizeRows(certificateQuery.data?.correlations),
+    () => normalizeRows(certificateQuery.data?.correlations, 'certificates'),
     [certificateQuery.data?.correlations]
   )
   const certificateDateCorrelations = useMemo(
@@ -238,12 +252,13 @@ export function CorrelationPanel() {
       normalizeRows(
         certificateDateQuery.data?.correlation
           ? [certificateDateQuery.data.correlation]
-          : []
+          : [],
+        'certificate-date'
       ),
     [certificateDateQuery.data?.correlation]
   )
   const awardCorrelations = useMemo(
-    () => normalizeRows(awardQuery.data?.correlations),
+    () => normalizeRows(awardQuery.data?.correlations, 'awards'),
     [awardQuery.data?.correlations]
   )
 
@@ -353,13 +368,115 @@ export function CorrelationPanel() {
         <Separator />
 
         <Tabs value={tab} onValueChange={(value) => setTab(value as TabValue)}>
-          <TabsList className='grid w-full grid-cols-2 md:grid-cols-4'>
+          <TabsList className='grid w-full grid-cols-2 md:grid-cols-5'>
             {TAB_ORDER.map((value) => (
               <TabsTrigger key={value} value={value}>
                 {TAB_META[value].label}
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <TabsContent value='overview' className='space-y-3'>
+            <p className='text-sm text-muted-foreground'>
+              {TAB_META.overview.description}
+            </p>
+
+            <div className='space-y-5'>
+              <div className='space-y-3 rounded-lg border bg-background p-4'>
+                <div>
+                  <p className='text-sm font-medium'>{TAB_META.sqlite.label}</p>
+                  <p className='text-xs text-muted-foreground'>
+                    {TAB_META.sqlite.description}
+                  </p>
+                </div>
+                <div className='grid gap-4 lg:grid-cols-2'>
+                  <CorrelationChart
+                    title='상관계수 상위 10개'
+                    helper='Absolute 기준 상위 순서'
+                    rows={sqliteCorrelations}
+                    metric='absolute'
+                  />
+                  <CorrelationChart
+                    title='피어슨 계수 (부호 포함)'
+                    helper='값이 +1에 가까울수록 양의 상관, -1에 가까울수록 음의 상관'
+                    rows={sqliteCorrelations}
+                    metric='pearson'
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-3 rounded-lg border bg-background p-4'>
+                <div>
+                  <p className='text-sm font-medium'>{TAB_META.certificates.label}</p>
+                  <p className='text-xs text-muted-foreground'>
+                    {TAB_META.certificates.description}
+                  </p>
+                </div>
+                <div className='grid gap-4 lg:grid-cols-2'>
+                  <CorrelationChart
+                    title='자격증명 상위 10개'
+                    helper='Absolute 기준 상위 순서'
+                    rows={certificateCorrelations}
+                    metric='absolute'
+                  />
+                  <CorrelationChart
+                    title='자격증명 피어슨 계수'
+                    helper='부호를 포함해 취업과의 상관 정도를 확인합니다.'
+                    rows={certificateCorrelations}
+                    metric='pearson'
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-3 rounded-lg border bg-background p-4'>
+                <div>
+                  <p className='text-sm font-medium'>
+                    {TAB_META['certificate-date'].label}
+                  </p>
+                  <p className='text-xs text-muted-foreground'>
+                    {TAB_META['certificate-date'].description}
+                  </p>
+                </div>
+                <div className='grid gap-4 lg:grid-cols-2'>
+                  <CorrelationChart
+                    title='취득일 상관계수'
+                    helper='단일 피처 대상'
+                    rows={certificateDateCorrelations}
+                    metric='absolute'
+                  />
+                  <CorrelationChart
+                    title='취득일 피어슨 계수'
+                    helper='음/양의 상관을 함께 확인하세요.'
+                    rows={certificateDateCorrelations}
+                    metric='pearson'
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-3 rounded-lg border bg-background p-4'>
+                <div>
+                  <p className='text-sm font-medium'>{TAB_META.awards.label}</p>
+                  <p className='text-xs text-muted-foreground'>
+                    {TAB_META.awards.description}
+                  </p>
+                </div>
+                <div className='grid gap-4 lg:grid-cols-2'>
+                  <CorrelationChart
+                    title='수상명 상위 10개'
+                    helper='Absolute 기준 상위 순서'
+                    rows={awardCorrelations}
+                    metric='absolute'
+                  />
+                  <CorrelationChart
+                    title='수상명 피어슨 계수'
+                    helper='부호를 포함해 확인'
+                    rows={awardCorrelations}
+                    metric='pearson'
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
 
           <TabsContent value='sqlite' className='space-y-3'>
             <p className='text-sm text-muted-foreground'>
@@ -499,11 +616,13 @@ function CorrelationTable({
   isLoading,
   emptyMessage,
   highlightLabel,
+  showSource,
 }: {
   rows: NormalizedRow[]
   isLoading: boolean
   emptyMessage: string
   highlightLabel?: string
+  showSource?: boolean
 }) {
   if (isLoading) {
     return (
@@ -528,6 +647,7 @@ function CorrelationTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {showSource ? <TableHead>범주</TableHead> : null}
             <TableHead>항목</TableHead>
             <TableHead>Pearson</TableHead>
             <TableHead>Absolute</TableHead>
@@ -536,7 +656,14 @@ function CorrelationTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.label}>
+            <TableRow key={`${row.source ?? 'unknown'}-${row.label}`}>
+              {showSource ? (
+                <TableCell>
+                  <Badge variant='secondary'>
+                    {row.source ? TAB_META[row.source].label : '기타'}
+                  </Badge>
+                </TableCell>
+              ) : null}
               <TableCell>
                 <div className='flex items-center gap-2'>
                   <Badge variant='outline'>{row.label}</Badge>
@@ -567,16 +694,18 @@ function CorrelationChart({
   title,
   helper,
   metric = 'absolute',
+  formatLabel,
 }: {
   rows: NormalizedRow[]
   title: string
   helper?: string
   metric?: 'absolute' | 'pearson'
+  formatLabel?: (row: NormalizedRow) => string
 }) {
   const chartData = useMemo(
     () =>
       rows.slice(0, 10).map((row) => ({
-        name: row.label,
+        name: formatLabel ? formatLabel(row) : row.label,
         value:
           metric === 'absolute'
             ? typeof row.absolute === 'number'
@@ -584,7 +713,7 @@ function CorrelationChart({
               : Math.abs(row.pearson)
             : row.pearson,
       })),
-    [metric, rows]
+    [formatLabel, metric, rows]
   )
 
   if (!chartData.length) return null
