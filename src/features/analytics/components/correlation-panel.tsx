@@ -32,6 +32,8 @@ import {
 } from 'recharts'
 import {
   fetchAwardCorrelations,
+  fetchGradeCorrelations,
+  fetchReport,
   CertificateDateCorrelationResponse,
   CorrelationResponse,
   fetchCertificateCorrelations,
@@ -46,7 +48,10 @@ type TabValue =
   | 'sqlite'
   | 'certificates'
   | 'certificate-date'
+  | 'certificates'
+  | 'certificate-date'
   | 'awards'
+  | 'grades'
 
 type CorrelationSource = Exclude<TabValue, 'overview'>
 
@@ -87,6 +92,10 @@ const TAB_META: Record<
     label: '수상명',
     description: '수상명별 취업 상관계수 (2명 이상 동일 수상명)',
   },
+  grades: {
+    label: '과목별 성적',
+    description: '각 과목의 원점수와 취업의 상관계수',
+  },
 }
 
 const TAB_ORDER: TabValue[] = [
@@ -95,6 +104,7 @@ const TAB_ORDER: TabValue[] = [
   'certificates',
   'certificate-date',
   'awards',
+  'grades',
 ]
 
 const resolveLabel = (record: Record<string, unknown>) => {
@@ -185,16 +195,24 @@ export function CorrelationPanel() {
     staleTime: 1000 * 60 * 5,
   })
 
+  const gradeQuery = useQuery<NamedCorrelationResponse>({
+    queryKey: ['correlations', 'grades', applied.mode, generation ?? 'all'],
+    queryFn: () => fetchGradeCorrelations(generation),
+    staleTime: 1000 * 60 * 5,
+  })
+
   const isRefreshing = [
     sqliteQuery,
     certificateQuery,
     certificateDateQuery,
     awardQuery,
+    gradeQuery,
   ].some((query) => query.isFetching)
   const sqliteLoading = sqliteQuery.isLoading
   const certificateLoading = certificateQuery.isLoading
   const certificateDateLoading = certificateDateQuery.isLoading
   const awardLoading = awardQuery.isLoading
+  const gradeLoading = gradeQuery.isLoading
 
   useEffect(() => {
     const contexts = [
@@ -202,6 +220,7 @@ export function CorrelationPanel() {
       { error: certificateQuery.error, context: '자격증명 상관계수' },
       { error: certificateDateQuery.error, context: '자격증 취득일 상관계수' },
       { error: awardQuery.error, context: '수상명 상관계수' },
+      { error: gradeQuery.error, context: '과목별 성적 상관계수' },
     ]
 
     contexts.forEach(({ error, context }) => {
@@ -221,7 +240,28 @@ export function CorrelationPanel() {
     certificateDateQuery.error,
     certificateQuery.error,
     sqliteQuery.error,
+    gradeQuery.error,
   ])
+
+  const handleDownloadReport = async () => {
+    try {
+      const blob = await fetchReport(generation)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `analytics_report_${generation ?? 'all'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: '리포트 다운로드 실패',
+        description: error instanceof Error ? error.message : '알 수 없는 오류',
+      })
+    }
+  }
 
   const handleApply = () => {
     if (mode === 'custom') {
@@ -260,6 +300,10 @@ export function CorrelationPanel() {
   const awardCorrelations = useMemo(
     () => normalizeRows(awardQuery.data?.correlations, 'awards'),
     [awardQuery.data?.correlations]
+  )
+  const gradeCorrelations = useMemo(
+    () => normalizeRows(gradeQuery.data?.correlations, 'grades'),
+    [gradeQuery.data?.correlations]
   )
 
   const topFeature = sqliteCorrelations[0]
@@ -336,6 +380,14 @@ export function CorrelationPanel() {
               )}
               분석 새로고침
             </Button>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={handleDownloadReport}
+              className='ml-2 w-full'
+            >
+              리포트 다운로드
+            </Button>
           </div>
         </div>
 
@@ -368,7 +420,7 @@ export function CorrelationPanel() {
         <Separator />
 
         <Tabs value={tab} onValueChange={(value) => setTab(value as TabValue)}>
-          <TabsList className='grid w-full grid-cols-2 md:grid-cols-5'>
+          <TabsList className='grid w-full grid-cols-2 md:grid-cols-6'>
             {TAB_ORDER.map((value) => (
               <TabsTrigger key={value} value={value}>
                 {TAB_META[value].label}
@@ -471,6 +523,28 @@ export function CorrelationPanel() {
                     title='수상명 피어슨 계수'
                     helper='부호를 포함해 확인'
                     rows={awardCorrelations}
+                    metric='pearson'
+                  />
+                </div>
+              </div>
+              <div className='space-y-3 rounded-lg border bg-background p-4'>
+                <div>
+                  <p className='text-sm font-medium'>{TAB_META.grades.label}</p>
+                  <p className='text-xs text-muted-foreground'>
+                    {TAB_META.grades.description}
+                  </p>
+                </div>
+                <div className='grid gap-4 lg:grid-cols-2'>
+                  <CorrelationChart
+                    title='과목별 성적 상위 10개'
+                    helper='Absolute 기준 상위 순서'
+                    rows={gradeCorrelations}
+                    metric='absolute'
+                  />
+                  <CorrelationChart
+                    title='과목별 성적 피어슨 계수'
+                    helper='부호를 포함해 확인'
+                    rows={gradeCorrelations}
                     metric='pearson'
                   />
                 </div>
@@ -580,6 +654,29 @@ export function CorrelationPanel() {
               rows={awardCorrelations}
               isLoading={awardLoading}
               emptyMessage='조건을 만족하는 수상명 상관 데이터가 없습니다.'
+            />
+          </TabsContent>
+
+          <TabsContent value='grades' className='space-y-3'>
+            <p className='text-sm text-muted-foreground'>
+              {TAB_META.grades.description}
+            </p>
+            <CorrelationChart
+              title='과목별 성적 상위 10개'
+              helper='Absolute 기준 상위 순서'
+              rows={gradeCorrelations}
+              metric='absolute'
+            />
+            <CorrelationChart
+              title='과목별 성적 피어슨 계수'
+              helper='부호를 포함해 확인'
+              rows={gradeCorrelations}
+              metric='pearson'
+            />
+            <CorrelationTable
+              rows={gradeCorrelations}
+              isLoading={gradeLoading}
+              emptyMessage='조건을 만족하는 과목별 성적 상관 데이터가 없습니다.'
             />
           </TabsContent>
         </Tabs>

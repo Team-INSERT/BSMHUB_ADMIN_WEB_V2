@@ -190,6 +190,22 @@ export async function fetchAwardCorrelations(generation?: number) {
   )
 }
 
+export async function fetchGradeCorrelations(generation?: number) {
+  const search = generation ? `?generation=${generation}` : ''
+  return analyticsFetch<NamedCorrelationResponse>(
+    `/analytics/grades/correlations${search}`
+  )
+}
+
+export async function fetchReport(generation?: number) {
+  const search = generation ? `?generation=${generation}` : ''
+  const response = await fetch(buildUrl(`/analytics/report${search}`))
+  if (!response.ok) {
+    throw new Error('리포트 생성에 실패했습니다.')
+  }
+  return response.blob()
+}
+
 export type StudentDataset = {
   dataset: string
   rows: Array<Record<string, unknown>>
