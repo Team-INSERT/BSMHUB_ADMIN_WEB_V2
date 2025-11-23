@@ -19,6 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Bar,
@@ -46,8 +53,6 @@ type Mode = 'all' | 'custom'
 type TabValue =
   | 'overview'
   | 'sqlite'
-  | 'certificates'
-  | 'certificate-date'
   | 'certificates'
   | 'certificate-date'
   | 'awards'
@@ -163,6 +168,7 @@ export function CorrelationPanel() {
     { mode: 'all' }
   )
   const [tab, setTab] = useState<TabValue>('overview')
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false)
 
   const generation = applied.mode === 'custom' ? applied.generation : undefined
 
@@ -245,6 +251,7 @@ export function CorrelationPanel() {
 
   const handleDownloadReport = async () => {
     try {
+      setIsDownloadingReport(true)
       const blob = await fetchReport(generation)
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -260,6 +267,8 @@ export function CorrelationPanel() {
         title: '리포트 다운로드 실패',
         description: error instanceof Error ? error.message : '알 수 없는 오류',
       })
+    } finally {
+      setIsDownloadingReport(false)
     }
   }
 
@@ -681,6 +690,24 @@ export function CorrelationPanel() {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      <AlertDialog open={isDownloadingReport}>
+        <AlertDialogContent className='flex flex-col items-center justify-center sm:max-w-[425px]'>
+          <AlertDialogHeader className='flex flex-col items-center space-y-4'>
+            <div className='flex h-12 w-12 items-center justify-center rounded-full bg-primary/10'>
+              <IconLoader2 className='h-6 w-6 animate-spin text-primary' />
+            </div>
+            <div className='space-y-2 text-center'>
+              <AlertDialogTitle>리포트 생성 중</AlertDialogTitle>
+              <AlertDialogDescription>
+                리포트를 생성하고 있습니다.
+                <br />
+                데이터 양에 따라 1~3분 정도 소요될 수 있습니다.
+              </AlertDialogDescription>
+            </div>
+          </AlertDialogHeader>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }
