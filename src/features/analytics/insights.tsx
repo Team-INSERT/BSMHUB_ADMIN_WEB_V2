@@ -6,6 +6,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CorrelationPanel } from './components/correlation-panel'
+import { CorrelationHelpDialog } from './components/correlation-help-dialog'
 
 export default function AnalyticsInsightsPage() {
   const [isLoading, setIsLoading] = useState(true)
@@ -28,7 +29,10 @@ export default function AnalyticsInsightsPage() {
         <Main className='space-y-6 pb-10 pr-4'>
           <section>
             <div className='mb-4'>
-              <Skeleton className='h-8 w-64' />
+              <div className='flex items-center gap-3'>
+                <Skeleton className='h-8 w-64' />
+                <Skeleton className='h-8 w-8 rounded' />
+              </div>
               <Skeleton className='mt-2 h-4 w-96' />
             </div>
             <div className='grid gap-6 lg:grid-cols-2'>
@@ -53,9 +57,12 @@ export default function AnalyticsInsightsPage() {
       <Main className='space-y-6 pb-10 pr-4'>
         <section>
           <div className='mb-4'>
-            <h1 className='text-2xl font-semibold tracking-tight'>
-              Advanced Analytics 인사이트
-            </h1>
+            <div className='flex items-center gap-3'>
+              <h1 className='text-2xl font-semibold tracking-tight'>
+                Advanced Analytics 인사이트
+              </h1>
+              <CorrelationHelpDialog />
+            </div>
             <p className='text-sm text-muted-foreground'>
               상관분석을 통해 모델이 어떤 피처에 민감한지 확인하고 데이터 품질을 개선하세요.
             </p>
