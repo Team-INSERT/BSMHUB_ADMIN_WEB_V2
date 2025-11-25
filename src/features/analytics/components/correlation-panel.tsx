@@ -117,6 +117,7 @@ const resolveLabel = (record: Record<string, unknown>) => {
     record.feature_label ||
     record.name ||
     record.feature ||
+    record.feature_code ||
     record.certificate_name ||
     record.certificate ||
     record.award_name ||
@@ -299,12 +300,10 @@ export function CorrelationPanel() {
   const certificateDateCorrelations = useMemo(
     () =>
       normalizeRows(
-        certificateDateQuery.data?.correlation
-          ? [certificateDateQuery.data.correlation]
-          : [],
+        certificateDateQuery.data?.correlations || [],
         'certificate-date'
       ),
-    [certificateDateQuery.data?.correlation]
+    [certificateDateQuery.data?.correlations]
   )
   const awardCorrelations = useMemo(
     () => normalizeRows(awardQuery.data?.correlations, 'awards'),

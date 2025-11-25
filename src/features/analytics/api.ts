@@ -169,11 +169,21 @@ export async function fetchCertificateCorrelations(generation?: number) {
 }
 
 export type CertificateDateCorrelationResponse = {
-  generation?: number
-  correlation?: Correlation & {
-    feature?: string
-    name?: string
-  }
+  label: string
+  rows_received: number
+  rows_used: number
+  features_analyzed: number
+  skipped_features: string[]
+  correlations: Array<
+    Correlation & {
+      feature?: string
+      feature_code?: string
+      feature_label?: string
+    }
+  >
+  analysis_type?: string
+  certificate_name?: string
+  failure_reason?: string | null
 }
 
 export async function fetchCertificateDateCorrelation(generation?: number) {
