@@ -13,18 +13,16 @@ export const useStudentPortfolio = (studentId: string | null) => {
         .eq('student_id', studentId)
         .single(),
       supabase
-        .from('profile_permission')
+        .from('profile')
         .select(
-          `profile(
-            description,
+          `description,
             profile_skills(skills!fk_profile_skills_skill_id(skill_name)),
             profile_competitions(competition:competitions(competition_name), prize),
             project_contributors(project:projects(project_id, project_name)),
-            profile_link(link, alt)
-          )`
+            profile_link(link, alt)`
         )
-        .eq('student_id', studentId)
-        .eq('profile.is_team', false)
+        .eq('owner', studentId)
+        .eq('is_team', false)
         .limit(1)
         .single(),
       supabase
@@ -35,7 +33,7 @@ export const useStudentPortfolio = (studentId: string | null) => {
 
     if (studentData.error) throw studentData.error
 
-    const profile = (profileData.data?.profile as ProfileData) || null
+    const profile = (profileData.data as ProfileData) || null
     const dreamJobs =
       studentJobsData.data
         ?.map(

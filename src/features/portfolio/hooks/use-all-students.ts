@@ -28,18 +28,16 @@ export const useAllStudents = () => {
       studentsData.map(async (student) => {
         const [profileData, studentJobsData] = await Promise.all([
           supabase
-            .from('profile_permission')
+            .from('profile')
             .select(
-              `profile(
-                description,
+              `description,
                 profile_skills(skills!fk_profile_skills_skill_id(skill_name)),
                 profile_competitions(competition:competitions(competition_name), prize),
                 project_contributors(project:projects(project_id, project_name)),
-                profile_link(link, alt)
-              )`
+                profile_link(link, alt)`
             )
-            .eq('student_id', student.student_id)
-            .eq('profile.is_team', false)
+            .eq('owner', student.student_id)
+            .eq('is_team', false)
             .limit(1)
             .single(),
           supabase
@@ -77,7 +75,7 @@ export const useAllStudents = () => {
           profile_link?: ProfileLink[]
         }
 
-        const rawProfile = (profileData.data?.profile as RawProfile) || null
+        const rawProfile = (profileData.data as RawProfile) || null
 
         const dreamJobs =
           studentJobsData.data
