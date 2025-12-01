@@ -14,6 +14,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { PortfolioFilters } from './components/portfolio-filters'
 import { StudentCard } from './components/student-card'
+import { StudentTable } from './components/student-table'
 import { useAllStudents } from './hooks/use-all-students.ts'
 
 export default function Portfolio() {
@@ -26,6 +27,7 @@ export default function Portfolio() {
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [dreamJobFilter, setDreamJobFilter] = useState('all')
   const [sortBy, setSortBy] = useState('name')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const handleStudentClick = (studentId: string) => {
     setSelectedStudentId(studentId)
@@ -149,6 +151,8 @@ export default function Portfolio() {
             dreamJobs={dreamJobs}
             sortBy={sortBy}
             onSortChange={setSortBy}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
           />
         </div>
 
@@ -167,23 +171,30 @@ export default function Portfolio() {
             <div className='mb-4 text-sm text-muted-foreground'>
               총 {sortedStudents.length}명의 학생
             </div>
-            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
-              {sortedStudents.map((student) => (
-                <StudentCard
-                  key={student.student_id}
-                  name={student.name}
-                  description={student.description ?? null}
-                  email={student.email}
-                  department={student.department}
-                  dreamJob={student.dreamJob}
-                  skills={student.skills}
-                  awards={student.awards}
-                  projects={student.projects}
-                  links={student.links}
-                  onClick={() => handleStudentClick(student.student_id)}
-                />
-              ))}
-            </div>
+            {viewMode === 'grid' ? (
+              <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+                {sortedStudents.map((student) => (
+                  <StudentCard
+                    key={student.student_id}
+                    name={student.name}
+                    description={student.description ?? null}
+                    email={student.email}
+                    department={student.department}
+                    dreamJob={student.dreamJob}
+                    skills={student.skills}
+                    awards={student.awards}
+                    projects={student.projects}
+                    links={student.links}
+                    onClick={() => handleStudentClick(student.student_id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <StudentTable
+                students={sortedStudents}
+                onStudentClick={handleStudentClick}
+              />
+            )}
           </>
         )}
       </Main>

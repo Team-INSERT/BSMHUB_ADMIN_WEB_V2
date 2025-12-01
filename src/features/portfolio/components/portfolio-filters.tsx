@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Filter, ArrowUpDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Search, Filter, ArrowUpDown, Grid3x3, List } from 'lucide-react'
 
 type PortfolioFiltersProps = {
   searchQuery: string
@@ -13,6 +14,8 @@ type PortfolioFiltersProps = {
   dreamJobs: string[]
   sortBy: string
   onSortChange: (value: string) => void
+  viewMode: 'grid' | 'list'
+  onViewModeChange: (mode: 'grid' | 'list') => void
 }
 
 export const PortfolioFilters = ({
@@ -26,6 +29,8 @@ export const PortfolioFilters = ({
   dreamJobs,
   sortBy,
   onSortChange,
+  viewMode,
+  onViewModeChange,
 }: PortfolioFiltersProps) => (
   <div className="space-y-4">
     <div className="flex flex-col gap-4 sm:flex-row">
@@ -85,6 +90,25 @@ export const PortfolioFilters = ({
             <SelectItem value="recent">하늘순</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <Button
+          variant={viewMode === 'grid' ? 'default' : 'outline'}
+          size="icon"
+          onClick={() => onViewModeChange('grid')}
+          aria-label="그리드 뷰"
+        >
+          <Grid3x3 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'list' ? 'default' : 'outline'}
+          size="icon"
+          onClick={() => onViewModeChange('list')}
+          aria-label="리스트 뷰"
+        >
+          <List className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   </div>
