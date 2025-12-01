@@ -180,7 +180,7 @@ export function DatasetCleaningPanel() {
           <div>
             <CardTitle>Advanced Analytics 데이터 업로드</CardTitle>
             <CardDescription>
-              기수와 데이터셋을 선택해 자동 정제 및 SQLite 적재를 실행합니다.
+              기수와 데이터셋을 선택해 자동 정제 및 DB 적재를 실행합니다.
             </CardDescription>
           </div>
           <Badge variant='secondary' className='text-xs'>

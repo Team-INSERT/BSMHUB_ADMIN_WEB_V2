@@ -1,32 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { IconLoader2, IconRefresh, IconTrendingUp } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
-import { toast } from '@/hooks/use-toast'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-} from '@/components/ui/alert-dialog'
-import { Skeleton } from '@/components/ui/skeleton'
+import { IconLoader2, IconRefresh, IconTrendingUp } from '@tabler/icons-react'
 import {
   Bar,
   BarChart,
@@ -37,6 +11,38 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { toast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   fetchAwardCorrelations,
   fetchGradeCorrelations,
@@ -82,7 +88,7 @@ const TAB_META: Record<
   },
   sqlite: {
     label: '전체 피처',
-    description: 'SQLite에 적재된 전 피처를 기반으로 한 상관계수',
+    description: 'DB에 적재된 전 피처를 기반으로 한 상관계수',
   },
   certificates: {
     label: '자격증명',
@@ -130,8 +136,10 @@ const resolveLabel = (record: Record<string, unknown>) => {
 }
 
 const sortByAbsolute = (a: NormalizedRow, b: NormalizedRow) => {
-  const aAbs = typeof a.absolute === 'number' ? Math.abs(a.absolute) : Math.abs(a.pearson)
-  const bAbs = typeof b.absolute === 'number' ? Math.abs(b.absolute) : Math.abs(b.pearson)
+  const aAbs =
+    typeof a.absolute === 'number' ? Math.abs(a.absolute) : Math.abs(a.pearson)
+  const bAbs =
+    typeof b.absolute === 'number' ? Math.abs(b.absolute) : Math.abs(b.pearson)
   return bAbs - aAbs
 }
 
@@ -152,9 +160,7 @@ const normalizeRows = (rows?: unknown[], source?: CorrelationSource) => {
           ? record.overlap_rows
           : undefined,
       sample_size:
-        typeof record.sample_size === 'number'
-          ? record.sample_size
-          : undefined,
+        typeof record.sample_size === 'number' ? record.sample_size : undefined,
       source,
     })
   })
@@ -165,9 +171,9 @@ const normalizeRows = (rows?: unknown[], source?: CorrelationSource) => {
 export function CorrelationPanel() {
   const [mode, setMode] = useState<Mode>('all')
   const [customGeneration, setCustomGeneration] = useState('')
-  const [applied, setApplied] = useState<{ mode: Mode; generation?: number }>(
-    { mode: 'all' }
-  )
+  const [applied, setApplied] = useState<{ mode: Mode; generation?: number }>({
+    mode: 'all',
+  })
   const [tab, setTab] = useState<TabValue>('overview')
   const [isDownloadingReport, setIsDownloadingReport] = useState(false)
 
@@ -180,7 +186,12 @@ export function CorrelationPanel() {
   })
 
   const certificateQuery = useQuery<NamedCorrelationResponse>({
-    queryKey: ['correlations', 'certificates', applied.mode, generation ?? 'all'],
+    queryKey: [
+      'correlations',
+      'certificates',
+      applied.mode,
+      generation ?? 'all',
+    ],
     queryFn: () => fetchCertificateCorrelations(generation),
     staleTime: 1000 * 60 * 5,
   })
@@ -321,7 +332,8 @@ export function CorrelationPanel() {
       <CardHeader>
         <CardTitle>상관관계 분석</CardTitle>
         <CardDescription>
-          SQLite에 적재된 특징량을 기반으로 레이블과의 Pearson 상관 계수를 확인합니다.
+          DB에 적재된 특징량을 기반으로 레이블과의 Pearson 상관 계수를
+          확인합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-5'>
@@ -339,7 +351,7 @@ export function CorrelationPanel() {
                 <RadioGroupItem
                   value='all'
                   id='mode-all'
-                  className='sr-only peer'
+                  className='peer sr-only'
                 />
                 <Label
                   htmlFor='mode-all'
@@ -352,7 +364,7 @@ export function CorrelationPanel() {
                 <RadioGroupItem
                   value='custom'
                   id='mode-custom'
-                  className='sr-only peer'
+                  className='peer sr-only'
                 />
                 <Label
                   htmlFor='mode-custom'
@@ -467,7 +479,9 @@ export function CorrelationPanel() {
 
               <div className='space-y-3 rounded-lg border bg-background p-4'>
                 <div>
-                  <p className='text-sm font-medium'>{TAB_META.certificates.label}</p>
+                  <p className='text-sm font-medium'>
+                    {TAB_META.certificates.label}
+                  </p>
                   <p className='text-xs text-muted-foreground'>
                     {TAB_META.certificates.description}
                   </p>
@@ -862,7 +876,11 @@ function CorrelationChart({
             margin={{ top: 8, right: 12, bottom: 8, left: 80 }}
           >
             <CartesianGrid strokeDasharray='3 3' />
-            <XAxis type='number' domain={domain} tickFormatter={(v) => v.toFixed(1)} />
+            <XAxis
+              type='number'
+              domain={domain}
+              tickFormatter={(v) => v.toFixed(1)}
+            />
             <YAxis
               type='category'
               dataKey='name'

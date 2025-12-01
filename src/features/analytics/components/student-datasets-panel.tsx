@@ -229,7 +229,7 @@ export function StudentDatasetsPanel() {
             <div>
               <CardTitle>학생 데이터 미리보기</CardTitle>
               <CardDescription>
-                `/students` API에서 조회한 정제 데이터를 기수별로 빠르게
+                아래에서 정제 데이터를 기수별로 빠르게
                 확인하세요.
               </CardDescription>
             </div>
