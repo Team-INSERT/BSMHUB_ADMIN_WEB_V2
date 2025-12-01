@@ -69,6 +69,16 @@ export const getSidebarData = ({ user, dashboardOnly }: { user: User | null; das
         items: generalItems as any,
       },
       {
+        title: '학생 포트폴리오',
+        items: [
+          {
+            title: '포트폴리오',
+            url: '/portfolio',
+            icon: IconUsers,
+          },
+        ],
+      },
+      {
         title: '피드백',
         items: [
           {
