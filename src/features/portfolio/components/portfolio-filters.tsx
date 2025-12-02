@@ -12,6 +12,9 @@ type PortfolioFiltersProps = {
   dreamJobFilter: string
   onDreamJobChange: (value: string) => void
   dreamJobs: string[]
+  generationFilter: string
+  onGenerationChange: (value: string) => void
+  generations: number[]
   sortBy: string
   onSortChange: (value: string) => void
   viewMode: 'grid' | 'list'
@@ -27,6 +30,9 @@ export const PortfolioFilters = ({
   dreamJobFilter,
   onDreamJobChange,
   dreamJobs,
+  generationFilter,
+  onGenerationChange,
+  generations,
   sortBy,
   onSortChange,
   viewMode,
@@ -74,6 +80,20 @@ export const PortfolioFilters = ({
           {dreamJobs.map((job) => (
             <SelectItem key={job} value={job}>
               {job}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={generationFilter} onValueChange={onGenerationChange}>
+        <SelectTrigger className="w-full sm:w-32">
+          <SelectValue placeholder="기수" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">전체 기수</SelectItem>
+          {generations.map((gen) => (
+            <SelectItem key={gen} value={gen.toString()}>
+              {gen}기
             </SelectItem>
           ))}
         </SelectContent>
