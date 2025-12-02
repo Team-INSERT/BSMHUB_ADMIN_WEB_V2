@@ -43,8 +43,12 @@ export const StudentCard = ({
     </CardHeader>
 
     <CardContent className="flex-1 space-y-3 overflow-hidden">
-      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
-        {description || '한줄소개가 작성되지 않았습니다.'}
+      <p className="text-sm text-muted-foreground min-h-[20px]">
+        {description
+          ? description.length > 30
+            ? `${description.slice(0, 30)}...`
+            : description
+          : '한줄소개가 작성되지 않았습니다.'}
       </p>
 
       {email && (

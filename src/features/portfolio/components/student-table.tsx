@@ -54,8 +54,12 @@ export const StudentTable = ({
               {student.name}
             </TableCell>
             <TableCell className='px-2 py-3'>
-              <div className='truncate text-sm text-muted-foreground'>
-                {student.description || '한줄소개가 작성되지 않았습니다.'}
+              <div className='text-sm text-muted-foreground'>
+                {student.description
+                  ? student.description.length > 30
+                    ? `${student.description.slice(0, 30)}...`
+                    : student.description
+                  : '한줄소개가 작성되지 않았습니다.'}
               </div>
             </TableCell>
             <TableCell className='whitespace-nowrap px-2 py-3'>

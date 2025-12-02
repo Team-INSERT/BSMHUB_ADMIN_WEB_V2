@@ -26,6 +26,7 @@ export default function Portfolio() {
   const [searchQuery, setSearchQuery] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [dreamJobFilter, setDreamJobFilter] = useState('all')
+  const [generationFilter, setGenerationFilter] = useState('all')
   const [sortBy, setSortBy] = useState('name')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -58,53 +59,34 @@ export default function Portfolio() {
     return Array.from(new Set(allJobs)).sort() as string[]
   }, [students])
 
-  // Filter students based on search, department, and dream job
+  // Get unique generations
+  const generations = useMemo((): number[] => {
+    if (!students) return []
+    return [...new Set(students.map((s) => s.generation).filter(Boolean))].sort((a, b) => b - a)
+  }, [students])
+
+  // Filter students
   const filteredStudents = useMemo(() => {
     if (!students) return []
 
-    return students.filter(
-      (student: {
-        department: string
-        dreamJob: string | null
-        name: string
-        email: string | null
-        skills: { skill_name: string }[]
-      }) => {
-        // Department filter
-        if (
-          departmentFilter !== 'all' &&
-          student.department !== departmentFilter
-        ) {
-          return false
-        }
+    return students.filter((student) => {
+      if (departmentFilter !== 'all' && student.department !== departmentFilter) return false
+      if (dreamJobFilter !== 'all' && !student.dreamJob?.includes(dreamJobFilter)) return false
+      if (generationFilter !== 'all' && student.generation?.toString() !== generationFilter) return false
 
-        // Dream job filter
-        if (dreamJobFilter !== 'all') {
-          if (!student.dreamJob || !student.dreamJob.includes(dreamJobFilter)) {
-            return false
-          }
-        }
-
-        // Search filter
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase()
-          const matchesName = student.name.toLowerCase().includes(query)
-          const matchesEmail = student.email?.toLowerCase().includes(query)
-          const matchesSkills = student.skills.some(
-            (skill: { skill_name: string }) =>
-              skill.skill_name.toLowerCase().includes(query)
-          )
-          const matchesDreamJob = student.dreamJob
-            ?.toLowerCase()
-            .includes(query)
-
-          return matchesName || matchesEmail || matchesSkills || matchesDreamJob
-        }
-
-        return true
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        return [
+          student.name,
+          student.email,
+          student.dreamJob,
+          ...student.skills.map((s) => s.skill_name)
+        ].some((field) => field?.toLowerCase().includes(query))
       }
-    )
-  }, [students, searchQuery, departmentFilter, dreamJobFilter])
+
+      return true
+    })
+  }, [students, searchQuery, departmentFilter, dreamJobFilter, generationFilter])
 
   // Sort students
   const sortedStudents = useMemo(() => {
@@ -149,6 +131,9 @@ export default function Portfolio() {
             dreamJobFilter={dreamJobFilter}
             onDreamJobChange={setDreamJobFilter}
             dreamJobs={dreamJobs}
+            generationFilter={generationFilter}
+            onGenerationChange={setGenerationFilter}
+            generations={generations}
             sortBy={sortBy}
             onSortChange={setSortBy}
             viewMode={viewMode}
