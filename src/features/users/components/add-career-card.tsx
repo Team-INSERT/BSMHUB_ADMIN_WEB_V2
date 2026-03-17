@@ -19,10 +19,10 @@ import { useHandleEmploymentMutation } from '../services/employment-companies/ha
 import { useHandleFieldTrainingMutation } from '../services/field-training/handleFieldTraining'
 import { useJobListQuery } from '../services/field-training/selectJobList'
 import { AddFieldTrainingOption } from './add-field-training-option'
-import { FT, EMP, OverlapTarget, FAR_FUTURE } from './career-types'
-import { toDateStr, toDateTimeStr } from './career-utils'
 import { checkOverlaps } from './career-overlap'
 import { OverlapConfirmDialog } from './career-overlap-confirm-dialog'
+import { FT, EMP, OverlapTarget, FAR_FUTURE } from './career-types'
+import { toDateStr, toDateTimeStr } from './career-utils'
 
 export function AddCareerCard({
   studentId,
@@ -41,7 +41,9 @@ export function AddCareerCard({
   const [companyId, setCompanyId] = useState<number | null>(null)
   const [jobId, setJobId] = useState<number | null>(null)
   const [autoEmployment, setAutoEmployment] = useState(false)
-  const [pendingOverlaps, setPendingOverlaps] = useState<OverlapTarget[] | null>(null)
+  const [pendingOverlaps, setPendingOverlaps] = useState<
+    OverlapTarget[] | null
+  >(null)
 
   const { data: companies = [], refetch: refetchCompanies } =
     useCompanyListQuery()
@@ -143,17 +145,86 @@ export function AddCareerCard({
         if (overlap.type === 'field_training') {
           const t = overlap.target
           if (adj.kind === 'trim-end') {
-            await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+            await ftMutate([
+              {
+                action: 'update',
+                datas: {
+                  field_training: {
+                    student_id: studentId,
+                    company_id: t.company_id,
+                    job_id: t.job_id,
+                    start_date: t.start_date,
+                    end_date: toDateStr(adj.newEnd),
+                  },
+                },
+              },
+            ])
           } else if (adj.kind === 'push-start') {
-            await ftMutate([{ action: 'delete', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: t.end_date ?? '' } } }])
-            await ftMutate([{ action: 'add', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: toDateStr(adj.newStart), end_date: t.end_date, lead_or_part: t.lead_or_part, created_at: toDateTimeStr(new Date()) } } }])
+            await ftMutate([
+              {
+                action: 'delete',
+                datas: {
+                  field_training: {
+                    student_id: studentId,
+                    company_id: t.company_id,
+                    job_id: t.job_id,
+                    start_date: t.start_date,
+                    end_date: t.end_date ?? '',
+                  },
+                },
+              },
+            ])
+            await ftMutate([
+              {
+                action: 'add',
+                datas: {
+                  field_training: {
+                    student_id: studentId,
+                    company_id: t.company_id,
+                    job_id: t.job_id,
+                    start_date: toDateStr(adj.newStart),
+                    end_date: t.end_date,
+                    lead_or_part: t.lead_or_part,
+                    created_at: toDateTimeStr(new Date()),
+                  },
+                },
+              },
+            ])
           }
         } else {
           const t = overlap.target
           if (adj.kind === 'trim-end') {
-            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+            await empMutate([
+              {
+                action: 'update',
+                datas: {
+                  employment_companies: {
+                    student_id: studentId,
+                    company_id: t.company_id,
+                    job_id: t.job_id,
+                    original_start_date: t.start_date,
+                    start_date: t.start_date,
+                    end_date: toDateStr(adj.newEnd),
+                  },
+                },
+              },
+            ])
           } else if (adj.kind === 'push-start') {
-            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: toDateStr(adj.newStart), end_date: t.end_date } } }])
+            await empMutate([
+              {
+                action: 'update',
+                datas: {
+                  employment_companies: {
+                    student_id: studentId,
+                    company_id: t.company_id,
+                    job_id: t.job_id,
+                    original_start_date: t.start_date,
+                    start_date: toDateStr(adj.newStart),
+                    end_date: t.end_date,
+                  },
+                },
+              },
+            ])
           }
         }
       }
@@ -172,7 +243,10 @@ export function AddCareerCard({
     const newEnd = dateRange.to ?? FAR_FUTURE
     const overlaps = checkOverlaps(dateRange.from, newEnd, '', allFT, allEMP)
     if (overlaps.some((o) => o.adjustment.kind === 'block')) {
-      toast({ variant: 'destructive', title: '기존 기간을 완전히 덮어버려 저장할 수 없습니다.' })
+      toast({
+        variant: 'destructive',
+        title: '기존 기간을 완전히 덮어버려 저장할 수 없습니다.',
+      })
       return
     }
     if (overlaps.length > 0) {
@@ -289,19 +363,19 @@ export function AddCareerCard({
           </div>
 
           {careerType === 'field_training' && (
-            <div className='flex items-center justify-between rounded-md border p-3'>
-              <div>
-                <p className='text-sm font-medium'>취업으로 이어지기</p>
+            <div className='flex flex-col rounded-md border p-3'>
+              <p className='text-sm font-medium'>취업으로 이어지기</p>
+              <div className='flex flex-row gap-2'>
                 <p className='text-xs text-muted-foreground'>
                   현장실습 종료 다음날부터 같은 회사·직무로 취업 이력을 자동
                   등록합니다.
                 </p>
+                <Switch
+                  checked={autoEmployment}
+                  onCheckedChange={setAutoEmployment}
+                  id='auto-emp'
+                />
               </div>
-              <Switch
-                checked={autoEmployment}
-                onCheckedChange={setAutoEmployment}
-                id='auto-emp'
-              />
             </div>
           )}
         </>
