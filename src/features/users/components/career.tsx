@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -95,7 +96,7 @@ function findAllOverlaps(
 ): OverlapInfo[] {
   const results: OverlapInfo[] = []
   for (const ft of allFT) {
-    const ftKey = `ft-${ft.company_id}-${ft.start_date}`
+    const ftKey = `ft-${ft.company_id}-${ft.job_id}-${ft.start_date}`
     if (ftKey === selfKey || !!ft.deleted_at) continue
     const s = parseLocalDate(ft.start_date)
     const e = ft.end_date ? parseLocalDate(ft.end_date) : FAR_FUTURE
@@ -108,7 +109,7 @@ function findAllOverlaps(
       })
   }
   for (const emp of allEMP) {
-    const empKey = `emp-${emp.company_id}-${emp.start_date}`
+    const empKey = `emp-${emp.company_id}-${emp.job_id}-${emp.start_date}`
     if (empKey === selfKey || !!emp.deleted_at) continue
     const s = parseLocalDate(emp.start_date)
     const e = emp.end_date ? parseLocalDate(emp.end_date) : FAR_FUTURE
@@ -142,7 +143,7 @@ function FieldTrainingCard({
   allFT: FT[]
   allEMP: EMP[]
 }) {
-  const selfKey = `ft-${ft.company_id}-${ft.start_date}`
+  const selfKey = `ft-${ft.company_id}-${ft.job_id}-${ft.start_date}`
   const [isOpen, setIsOpen] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange>({
     from: parseLocalDate(ft.start_date),
@@ -475,7 +476,7 @@ function EmploymentCard({
   allFT: FT[]
   allEMP: EMP[]
 }) {
-  const selfKey = `emp-${emp.company_id}-${emp.start_date}`
+  const selfKey = `emp-${emp.company_id}-${emp.job_id}-${emp.start_date}`
   const [isOpen, setIsOpen] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange>({
     from: parseLocalDate(emp.start_date),
@@ -486,6 +487,8 @@ function EmploymentCard({
   const [overlapNewStart, setOverlapNewStart] = useState<Date | null>(null)
   const [endDialogOpen, setEndDialogOpen] = useState(false)
   const [endDate, setEndDate] = useState<Date>(new Date())
+  const [endReason, setEndReason] = useState('')
+  const [endReasonEtc, setEndReasonEtc] = useState('')
 
   const { data: jobs = [] } = useJobListQuery()
   const { mutateAsync: empMutate } = useHandleEmploymentMutation()
@@ -752,7 +755,16 @@ function EmploymentCard({
       )}
 
       {/* 퇴직 처리 다이얼로그 */}
-      <Dialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
+      <Dialog
+        open={endDialogOpen}
+        onOpenChange={(open) => {
+          setEndDialogOpen(open)
+          if (!open) {
+            setEndReason('')
+            setEndReasonEtc('')
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>퇴직 처리</DialogTitle>
@@ -771,6 +783,26 @@ function EmploymentCard({
                 className='rounded-lg border border-border p-2'
               />
             </div>
+            <p className='text-sm font-medium'>퇴직 사유</p>
+            <Select value={endReason} onValueChange={setEndReason}>
+              <SelectTrigger>
+                <SelectValue placeholder='사유를 선택하세요' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='졸업'>졸업</SelectItem>
+                <SelectItem value='계약만료'>계약 만료</SelectItem>
+                <SelectItem value='자진퇴사'>자진 퇴사</SelectItem>
+                <SelectItem value='권고사직'>권고 사직</SelectItem>
+                <SelectItem value='기타'>기타</SelectItem>
+              </SelectContent>
+            </Select>
+            {endReason === '기타' && (
+              <Input
+                placeholder='사유를 직접 입력하세요'
+                value={endReasonEtc}
+                onChange={(e) => setEndReasonEtc(e.target.value)}
+              />
+            )}
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={() => setEndDialogOpen(false)}>
@@ -1311,7 +1343,7 @@ export const Career = ({
           items.map((item) =>
             item.type === 'field_training' ? (
               <FieldTrainingCard
-                key={`ft-${item.data.company_id}-${item.data.start_date}`}
+                key={`ft-${item.data.company_id}-${item.data.job_id}-${item.data.start_date}`}
                 ft={item.data}
                 studentId={studentId}
                 allFT={fieldTraining.filter((f) => !f.deleted_at)}
@@ -1319,7 +1351,7 @@ export const Career = ({
               />
             ) : (
               <EmploymentCard
-                key={`emp-${item.data.company_id}-${item.data.start_date}`}
+                key={`emp-${item.data.company_id}-${item.data.job_id}-${item.data.start_date}`}
                 emp={item.data}
                 studentId={studentId}
                 allFT={fieldTraining.filter((f) => !f.deleted_at)}

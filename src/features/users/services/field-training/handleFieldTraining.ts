@@ -45,7 +45,7 @@ const handleFieldTraining = async (editDataList: UserEditType) => {
       case 'add': {
         const { error } = await supabase
           .from('field_training')
-          .insert([insertData])
+          .upsert([{ ...insertData, deleted_at: null }], { ignoreDuplicates: false })
         if (error) throw new Error(error.message)
         break
       }
