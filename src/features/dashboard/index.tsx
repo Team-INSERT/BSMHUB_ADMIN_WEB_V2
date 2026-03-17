@@ -10,7 +10,7 @@ import { ThemeSwitch } from '@/components/theme-switch'
 
 export default function Dashboard() {
   const { theme } = useTheme()
-  const grafanaSrc = `/d/degaj6kbosoowe/bsmhubtest?orgId=1&from=now-30d&to=now&timezone=browser&var-join_at_year=2023&refresh=auto&kiosk&theme=${
+  const grafanaSrc = `/d/degaj6kbosoow2/bsmhubtest2?orgId=1&from=now-30d&to=now&timezone=browser&var-join_at_year=2024&refresh=auto&kiosk&theme=${
     theme === 'system'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
