@@ -1,16 +1,30 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus } from 'lucide-react'
+import { ko } from 'date-fns/locale'
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Plus,
+} from 'lucide-react'
 import { DateRange } from 'react-day-picker'
 import { DayPicker } from 'react-day-picker'
-import { ko } from 'date-fns/locale'
-import { formatDate } from '@/utils/formatDate'
 import { cn } from '@/lib/utils'
+import { formatDate } from '@/utils/formatDate'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -86,7 +100,12 @@ function findAllOverlaps(
     const s = parseLocalDate(ft.start_date)
     const e = ft.end_date ? parseLocalDate(ft.end_date) : FAR_FUTURE
     if (rangesOverlap(newStart, newEnd, s, e))
-      results.push({ type: 'field_training', companyName: ft.companies?.company_name ?? '', startDate: ft.start_date, endDate: ft.end_date })
+      results.push({
+        type: 'field_training',
+        companyName: ft.companies?.company_name ?? '',
+        startDate: ft.start_date,
+        endDate: ft.end_date,
+      })
   }
   for (const emp of allEMP) {
     const empKey = `emp-${emp.company_id}-${emp.start_date}`
@@ -94,7 +113,12 @@ function findAllOverlaps(
     const s = parseLocalDate(emp.start_date)
     const e = emp.end_date ? parseLocalDate(emp.end_date) : FAR_FUTURE
     if (rangesOverlap(newStart, newEnd, s, e))
-      results.push({ type: 'employment', companyName: emp.companies?.company_name ?? '', startDate: emp.start_date, endDate: emp.end_date })
+      results.push({
+        type: 'employment',
+        companyName: emp.companies?.company_name ?? '',
+        startDate: emp.start_date,
+        endDate: emp.end_date,
+      })
   }
   return results
 }
@@ -142,18 +166,22 @@ function FieldTrainingCard({
     ])
 
   const doSave = async () => {
-    await ftMutate([{
-      action: 'update',
-      datas: {
-        field_training: {
-          student_id: studentId,
-          company_id: ft.company_id,
-          job_id: jobId,
-          start_date: dateRange.from ? toDateStr(dateRange.from) : ft.start_date,
-          end_date: dateRange.to ? toDateStr(dateRange.to) : ft.end_date,
+    await ftMutate([
+      {
+        action: 'update',
+        datas: {
+          field_training: {
+            student_id: studentId,
+            company_id: ft.company_id,
+            job_id: jobId,
+            start_date: dateRange.from
+              ? toDateStr(dateRange.from)
+              : ft.start_date,
+            end_date: dateRange.to ? toDateStr(dateRange.to) : ft.end_date,
+          },
         },
       },
-    }])
+    ])
     await invalidate()
     setIsOpen(false)
     toast({ title: '저장되었습니다.' })
@@ -162,9 +190,14 @@ function FieldTrainingCard({
   const handleSave = async () => {
     try {
       const newStart = dateRange.from ?? new Date(ft.start_date)
-      const newEnd = dateRange.to ?? (ft.end_date ? new Date(ft.end_date) : FAR_FUTURE)
+      const newEnd =
+        dateRange.to ?? (ft.end_date ? new Date(ft.end_date) : FAR_FUTURE)
       const overlaps = findAllOverlaps(newStart, newEnd, selfKey, allFT, allEMP)
-      if (overlaps.length > 0) { setOverlapInfos(overlaps); setOverlapNewStart(newStart); return }
+      if (overlaps.length > 0) {
+        setOverlapInfos(overlaps)
+        setOverlapNewStart(newStart)
+        return
+      }
       await doSave()
     } catch {
       toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
@@ -179,33 +212,74 @@ function FieldTrainingCard({
     try {
       for (const info of overlapInfos) {
         if (info.type === 'field_training') {
-          const target = allFT.find(f => f.start_date === info.startDate && (f.companies?.company_name ?? '') === info.companyName)
-          if (target) await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: target.company_id, job_id: target.job_id, start_date: target.start_date, end_date: adjustedEndStr } } }])
+          const target = allFT.find(
+            (f) =>
+              f.start_date === info.startDate &&
+              (f.companies?.company_name ?? '') === info.companyName
+          )
+          if (target)
+            await ftMutate([
+              {
+                action: 'update',
+                datas: {
+                  field_training: {
+                    student_id: studentId,
+                    company_id: target.company_id,
+                    job_id: target.job_id,
+                    start_date: target.start_date,
+                    end_date: adjustedEndStr,
+                  },
+                },
+              },
+            ])
         } else {
-          const target = allEMP.find(e => e.start_date === info.startDate && (e.companies?.company_name ?? '') === info.companyName)
-          if (target) await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: target.company_id, job_id: target.job_id, start_date: target.start_date, end_date: adjustedEndStr, deleted_at: null } } }])
+          const target = allEMP.find(
+            (e) =>
+              e.start_date === info.startDate &&
+              (e.companies?.company_name ?? '') === info.companyName
+          )
+          if (target)
+            await empMutate([
+              {
+                action: 'update',
+                datas: {
+                  employment_companies: {
+                    student_id: studentId,
+                    company_id: target.company_id,
+                    job_id: target.job_id,
+                    start_date: target.start_date,
+                    end_date: adjustedEndStr,
+                    deleted_at: null,
+                  },
+                },
+              },
+            ])
         }
       }
       setOverlapInfos([])
       setOverlapNewStart(null)
       await doSave()
-    } catch { toast({ variant: 'destructive', title: '처리에 실패했습니다.' }) }
+    } catch {
+      toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
+    }
   }
 
   const handleDelete = async () => {
     try {
-      await ftMutate([{
-        action: 'delete',
-        datas: {
-          field_training: {
-            student_id: studentId,
-            company_id: ft.company_id,
-            job_id: ft.job_id,
-            start_date: ft.start_date,
-            end_date: ft.end_date ?? '',
+      await ftMutate([
+        {
+          action: 'delete',
+          datas: {
+            field_training: {
+              student_id: studentId,
+              company_id: ft.company_id,
+              job_id: ft.job_id,
+              start_date: ft.start_date,
+              end_date: ft.end_date ?? '',
+            },
           },
         },
-      }])
+      ])
       await invalidate()
       toast({ title: '삭제되었습니다.' })
     } catch {
@@ -215,32 +289,36 @@ function FieldTrainingCard({
 
   const handleEarlyEnd = async (endDate: string, deleteEmployment: boolean) => {
     try {
-      await ftMutate([{
-        action: 'update',
-        datas: {
-          field_training: {
-            student_id: studentId,
-            company_id: ft.company_id,
-            job_id: ft.job_id,
-            start_date: ft.start_date,
-            end_date: endDate,
-          },
-        },
-      }])
-      if (deleteEmployment) {
-        await empMutate([{
-          action: 'delete',
+      await ftMutate([
+        {
+          action: 'update',
           datas: {
-            employment_companies: {
+            field_training: {
               student_id: studentId,
               company_id: ft.company_id,
               job_id: ft.job_id,
               start_date: ft.start_date,
-              end_date: null,
-              created_at: new Date().toISOString(),
+              end_date: endDate,
             },
           },
-        }])
+        },
+      ])
+      if (deleteEmployment) {
+        await empMutate([
+          {
+            action: 'delete',
+            datas: {
+              employment_companies: {
+                student_id: studentId,
+                company_id: ft.company_id,
+                job_id: ft.job_id,
+                start_date: ft.start_date,
+                end_date: null,
+                created_at: new Date().toISOString(),
+              },
+            },
+          },
+        ])
       }
       await invalidate()
       setIsOpen(false)
@@ -260,19 +338,24 @@ function FieldTrainingCard({
       >
         <div className='space-y-0.5'>
           <div className='flex items-center gap-2'>
-            <Badge variant='secondary' className='text-xs'>현장실습</Badge>
+            <Badge variant='secondary' className='text-xs'>
+              현장실습
+            </Badge>
             <span className='font-medium'>{ft.companies.company_name}</span>
           </div>
           <p className='text-sm text-muted-foreground'>{ft.jobs.job_name}</p>
           <p className='text-sm text-muted-foreground'>
-            {formatDate(ft.start_date)} ~ {ft.end_date ? formatDate(ft.end_date) : '현재'}
+            {formatDate(ft.start_date)} ~{' '}
+            {ft.end_date ? formatDate(ft.end_date) : '현재'}
           </p>
         </div>
         <div className='flex items-center gap-2'>
           {isOngoing ? (
             <div className='flex items-center gap-1.5'>
               <span className='h-2 w-2 animate-pulse rounded-full bg-green-500' />
-              <span className='text-sm font-medium text-green-600'>진행 중</span>
+              <span className='text-sm font-medium text-green-600'>
+                진행 중
+              </span>
             </div>
           ) : (
             <Badge variant='outline'>종료</Badge>
@@ -296,8 +379,13 @@ function FieldTrainingCard({
           </div>
           <div className='space-y-1.5'>
             <p className='text-sm font-medium'>실습 직무</p>
-            <Select value={String(jobId)} onValueChange={(v) => setJobId(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={String(jobId)}
+              onValueChange={(v) => setJobId(Number(v))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {jobs.map((job) => (
                   <SelectItem key={job.job_id} value={String(job.job_id)}>
@@ -308,14 +396,34 @@ function FieldTrainingCard({
             </Select>
           </div>
           {ft.end_date && new Date(ft.end_date) > new Date() && (
-            <Button variant='outline' className='w-full' onClick={() => setEndDialogOpen(true)}>
+            <Button
+              variant='outline'
+              className='w-full'
+              onClick={() => setEndDialogOpen(true)}
+            >
               실습 조기종료
             </Button>
           )}
           <div className='flex gap-2 pt-1'>
-            <Button variant='destructive' size='sm' className='flex-1' onClick={handleDelete}>삭제</Button>
-            <Button variant='outline' size='sm' className='flex-1' onClick={() => setIsOpen(false)}>취소</Button>
-            <Button size='sm' className='flex-1' onClick={handleSave}>저장</Button>
+            <Button
+              variant='destructive'
+              size='sm'
+              className='flex-1'
+              onClick={handleDelete}
+            >
+              삭제
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              className='flex-1'
+              onClick={() => setIsOpen(false)}
+            >
+              취소
+            </Button>
+            <Button size='sm' className='flex-1' onClick={handleSave}>
+              저장
+            </Button>
           </div>
         </div>
       )}
@@ -327,10 +435,27 @@ function FieldTrainingCard({
       />
       <CareerOverlapDialog
         open={overlapInfos.length > 0}
-        onOpenChange={(open) => { if (!open) { setOverlapInfos([]); setOverlapNewStart(null) } }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOverlapInfos([])
+            setOverlapNewStart(null)
+          }
+        }}
         overlaps={overlapInfos}
-        adjustedEndDate={overlapNewStart ? toDateStr(new Date(overlapNewStart.getTime() - 86400000)) : null}
-        onSaveAnyway={async () => { setOverlapInfos([]); setOverlapNewStart(null); try { await doSave() } catch { toast({ variant: 'destructive', title: '저장에 실패했습니다.' }) } }}
+        adjustedEndDate={
+          overlapNewStart
+            ? toDateStr(new Date(overlapNewStart.getTime() - 86400000))
+            : null
+        }
+        onSaveAnyway={async () => {
+          setOverlapInfos([])
+          setOverlapNewStart(null)
+          try {
+            await doSave()
+          } catch {
+            toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
+          }
+        }}
         onAdjustAndSave={handleAdjustAndSave}
       />
     </div>
@@ -359,6 +484,8 @@ function EmploymentCard({
   const [jobId, setJobId] = useState(emp.job_id)
   const [overlapInfos, setOverlapInfos] = useState<OverlapInfo[]>([])
   const [overlapNewStart, setOverlapNewStart] = useState<Date | null>(null)
+  const [endDialogOpen, setEndDialogOpen] = useState(false)
+  const [endDate, setEndDate] = useState<Date>(new Date())
 
   const { data: jobs = [] } = useJobListQuery()
   const { mutateAsync: empMutate } = useHandleEmploymentMutation()
@@ -373,19 +500,23 @@ function EmploymentCard({
     ])
 
   const doSave = async () => {
-    await empMutate([{
-      action: 'update',
-      datas: {
-        employment_companies: {
-          student_id: studentId,
-          company_id: emp.company_id,
-          job_id: jobId,
-          start_date: dateRange.from ? toDateStr(dateRange.from) : emp.start_date,
-          end_date: dateRange.to ? toDateStr(dateRange.to) : null,
-          deleted_at: null,
+    await empMutate([
+      {
+        action: 'update',
+        datas: {
+          employment_companies: {
+            student_id: studentId,
+            company_id: emp.company_id,
+            job_id: jobId,
+            start_date: dateRange.from
+              ? toDateStr(dateRange.from)
+              : emp.start_date,
+            end_date: dateRange.to ? toDateStr(dateRange.to) : null,
+            deleted_at: null,
+          },
         },
       },
-    }])
+    ])
     await invalidate()
     setIsOpen(false)
     toast({ title: '저장되었습니다.' })
@@ -396,7 +527,11 @@ function EmploymentCard({
       const newStart = dateRange.from ?? new Date(emp.start_date)
       const newEnd = dateRange.to ?? FAR_FUTURE
       const overlaps = findAllOverlaps(newStart, newEnd, selfKey, allFT, allEMP)
-      if (overlaps.length > 0) { setOverlapInfos(overlaps); setOverlapNewStart(newStart); return }
+      if (overlaps.length > 0) {
+        setOverlapInfos(overlaps)
+        setOverlapNewStart(newStart)
+        return
+      }
       await doSave()
     } catch {
       toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
@@ -411,38 +546,105 @@ function EmploymentCard({
     try {
       for (const info of overlapInfos) {
         if (info.type === 'field_training') {
-          const target = allFT.find(f => f.start_date === info.startDate && (f.companies?.company_name ?? '') === info.companyName)
-          if (target) await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: target.company_id, job_id: target.job_id, start_date: target.start_date, end_date: adjustedEndStr } } }])
+          const target = allFT.find(
+            (f) =>
+              f.start_date === info.startDate &&
+              (f.companies?.company_name ?? '') === info.companyName
+          )
+          if (target)
+            await ftMutate([
+              {
+                action: 'update',
+                datas: {
+                  field_training: {
+                    student_id: studentId,
+                    company_id: target.company_id,
+                    job_id: target.job_id,
+                    start_date: target.start_date,
+                    end_date: adjustedEndStr,
+                  },
+                },
+              },
+            ])
         } else {
-          const target = allEMP.find(e => e.start_date === info.startDate && (e.companies?.company_name ?? '') === info.companyName)
-          if (target) await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: target.company_id, job_id: target.job_id, start_date: target.start_date, end_date: adjustedEndStr, deleted_at: null } } }])
+          const target = allEMP.find(
+            (e) =>
+              e.start_date === info.startDate &&
+              (e.companies?.company_name ?? '') === info.companyName
+          )
+          if (target)
+            await empMutate([
+              {
+                action: 'update',
+                datas: {
+                  employment_companies: {
+                    student_id: studentId,
+                    company_id: target.company_id,
+                    job_id: target.job_id,
+                    start_date: target.start_date,
+                    end_date: adjustedEndStr,
+                    deleted_at: null,
+                  },
+                },
+              },
+            ])
         }
       }
       setOverlapInfos([])
       setOverlapNewStart(null)
       await doSave()
-    } catch { toast({ variant: 'destructive', title: '처리에 실패했습니다.' }) }
+    } catch {
+      toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
+    }
   }
 
   const handleDelete = async () => {
     try {
-      await empMutate([{
-        action: 'delete',
-        datas: {
-          employment_companies: {
-            student_id: studentId,
-            company_id: emp.company_id,
-            job_id: emp.job_id,
-            start_date: emp.start_date,
-            end_date: emp.end_date,
-            deleted_at: toDateTimeStr(new Date()),
+      await empMutate([
+        {
+          action: 'delete',
+          datas: {
+            employment_companies: {
+              student_id: studentId,
+              company_id: emp.company_id,
+              job_id: emp.job_id,
+              start_date: emp.start_date,
+              end_date: emp.end_date,
+              deleted_at: toDateTimeStr(new Date()),
+            },
           },
         },
-      }])
+      ])
       await invalidate()
       toast({ title: '삭제되었습니다.' })
     } catch {
       toast({ variant: 'destructive', title: '삭제에 실패했습니다.' })
+    }
+  }
+
+  const handleEnd = async () => {
+    try {
+      await empMutate([
+        {
+          action: 'update',
+          datas: {
+            employment_companies: {
+              student_id: studentId,
+              company_id: emp.company_id,
+              job_id: emp.job_id,
+              start_date: emp.start_date,
+              end_date: toDateStr(endDate),
+              deleted_at: null,
+            },
+          },
+        },
+      ])
+      await invalidate()
+      setEndDialogOpen(false)
+      setIsOpen(false)
+      toast({ title: '퇴직 처리되었습니다.' })
+    } catch {
+      toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
     }
   }
 
@@ -454,12 +656,15 @@ function EmploymentCard({
       >
         <div className='space-y-0.5'>
           <div className='flex items-center gap-2'>
-            <Badge variant='secondary' className='text-xs'>취업</Badge>
+            <Badge variant='secondary' className='text-xs'>
+              취업
+            </Badge>
             <span className='font-medium'>{emp.companies.company_name}</span>
           </div>
           <p className='text-sm text-muted-foreground'>{emp.jobs.job_name}</p>
           <p className='text-sm text-muted-foreground'>
-            {formatDate(emp.start_date)} ~ {emp.end_date ? formatDate(emp.end_date) : '현재'}
+            {formatDate(emp.start_date)} ~{' '}
+            {emp.end_date ? formatDate(emp.end_date) : '현재'}
           </p>
         </div>
         <div className='flex items-center gap-2'>
@@ -483,15 +688,22 @@ function EmploymentCard({
               <Calendar
                 mode='single'
                 selected={dateRange.from}
-                onSelect={(date) => date && setDateRange({ from: date, to: undefined })}
+                onSelect={(date) =>
+                  date && setDateRange({ from: date, to: undefined })
+                }
                 className='rounded-lg border border-border p-2'
               />
             </div>
           </div>
           <div className='space-y-1.5'>
             <p className='text-sm font-medium'>취업 직무</p>
-            <Select value={String(jobId)} onValueChange={(v) => setJobId(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={String(jobId)}
+              onValueChange={(v) => setJobId(Number(v))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {jobs.map((job) => (
                   <SelectItem key={job.job_id} value={String(job.job_id)}>
@@ -501,19 +713,97 @@ function EmploymentCard({
               </SelectContent>
             </Select>
           </div>
+          {!emp.end_date && (
+            <Button
+              variant='outline'
+              className='w-full'
+              onClick={() => setEndDialogOpen(true)}
+            >
+              퇴직 처리
+            </Button>
+          )}
+          {emp.end_date && (
+            <p className='text-center text-xs text-muted-foreground'>
+              저장하면 퇴직일이 초기화되어 재직 중으로 변경됩니다.
+            </p>
+          )}
           <div className='flex gap-2 pt-1'>
-            <Button variant='destructive' size='sm' className='flex-1' onClick={handleDelete}>삭제</Button>
-            <Button variant='outline' size='sm' className='flex-1' onClick={() => setIsOpen(false)}>취소</Button>
-            <Button size='sm' className='flex-1' onClick={handleSave}>저장</Button>
+            <Button
+              variant='destructive'
+              size='sm'
+              className='flex-1'
+              onClick={handleDelete}
+            >
+              삭제
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              className='flex-1'
+              onClick={() => setIsOpen(false)}
+            >
+              취소
+            </Button>
+            <Button size='sm' className='flex-1' onClick={handleSave}>
+              저장
+            </Button>
           </div>
         </div>
       )}
+
+      {/* 퇴직 처리 다이얼로그 */}
+      <Dialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>퇴직 처리</DialogTitle>
+            <DialogDescription>
+              퇴직일을 선택하세요. 복직 시에는 카드를 열고 저장하면 재직 중으로
+              되돌아옵니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex w-full flex-col gap-3'>
+            <p className='text-sm font-medium'>퇴직일</p>
+            <div className='flex'>
+              <Calendar
+                mode='single'
+                selected={endDate}
+                onSelect={(date) => date && setEndDate(date)}
+                className='rounded-lg border border-border p-2'
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setEndDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleEnd}>퇴직 처리하기</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <CareerOverlapDialog
         open={overlapInfos.length > 0}
-        onOpenChange={(open) => { if (!open) { setOverlapInfos([]); setOverlapNewStart(null) } }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOverlapInfos([])
+            setOverlapNewStart(null)
+          }
+        }}
         overlaps={overlapInfos}
-        adjustedEndDate={overlapNewStart ? toDateStr(new Date(overlapNewStart.getTime() - 86400000)) : null}
-        onSaveAnyway={async () => { setOverlapInfos([]); setOverlapNewStart(null); try { await doSave() } catch { toast({ variant: 'destructive', title: '저장에 실패했습니다.' }) } }}
+        adjustedEndDate={
+          overlapNewStart
+            ? toDateStr(new Date(overlapNewStart.getTime() - 86400000))
+            : null
+        }
+        onSaveAnyway={async () => {
+          setOverlapInfos([])
+          setOverlapNewStart(null)
+          try {
+            await doSave()
+          } catch {
+            toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
+          }
+        }}
         onAdjustAndSave={handleAdjustAndSave}
       />
     </div>
@@ -532,7 +822,9 @@ function AddCareerCard({
   allEMP: EMP[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [careerType, setCareerType] = useState<'field_training' | 'employment' | null>(null)
+  const [careerType, setCareerType] = useState<
+    'field_training' | 'employment' | null
+  >(null)
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [companyId, setCompanyId] = useState<number | null>(null)
   const [jobId, setJobId] = useState<number | null>(null)
@@ -540,7 +832,8 @@ function AddCareerCard({
   const [overlapInfos, setOverlapInfos] = useState<OverlapInfo[]>([])
   const [overlapNewStart, setOverlapNewStart] = useState<Date | null>(null)
 
-  const { data: companies = [], refetch: refetchCompanies } = useCompanyListQuery()
+  const { data: companies = [], refetch: refetchCompanies } =
+    useCompanyListQuery()
   const { data: jobs = [], refetch: refetchJobs } = useJobListQuery()
   const { mutateAsync: ftMutate } = useHandleFieldTrainingMutation()
   const { mutateAsync: empMutate } = useHandleEmploymentMutation()
@@ -563,54 +856,63 @@ function AddCareerCard({
     try {
       if (careerType === 'field_training') {
         if (!dateRange.to) {
-          toast({ variant: 'destructive', title: '현장실습은 종료일이 필요합니다.' })
+          toast({
+            variant: 'destructive',
+            title: '현장실습은 종료일이 필요합니다.',
+          })
           return
         }
-        await ftMutate([{
-          action: 'add',
-          datas: {
-            field_training: {
-              student_id: studentId,
-              company_id: companyId,
-              job_id: jobId,
-              start_date: toDateStr(dateRange.from),
-              end_date: toDateStr(dateRange.to),
-              lead_or_part: false,
-              created_at: toDateTimeStr(new Date()),
+        await ftMutate([
+          {
+            action: 'add',
+            datas: {
+              field_training: {
+                student_id: studentId,
+                company_id: companyId,
+                job_id: jobId,
+                start_date: toDateStr(dateRange.from),
+                end_date: toDateStr(dateRange.to),
+                lead_or_part: false,
+                created_at: toDateTimeStr(new Date()),
+              },
             },
           },
-        }])
+        ])
         if (autoEmployment) {
           const empStart = new Date(dateRange.to)
           empStart.setDate(empStart.getDate() + 1)
-          await empMutate([{
+          await empMutate([
+            {
+              action: 'add',
+              datas: {
+                employment_companies: {
+                  student_id: studentId,
+                  company_id: companyId,
+                  job_id: jobId,
+                  start_date: toDateStr(empStart),
+                  end_date: null,
+                  created_at: toDateTimeStr(new Date()),
+                },
+              },
+            },
+          ])
+        }
+      } else {
+        await empMutate([
+          {
             action: 'add',
             datas: {
               employment_companies: {
                 student_id: studentId,
                 company_id: companyId,
                 job_id: jobId,
-                start_date: toDateStr(empStart),
-                end_date: null,
+                start_date: toDateStr(dateRange.from),
+                end_date: dateRange.to ? toDateStr(dateRange.to) : null,
                 created_at: toDateTimeStr(new Date()),
               },
             },
-          }])
-        }
-      } else {
-        await empMutate([{
-          action: 'add',
-          datas: {
-            employment_companies: {
-              student_id: studentId,
-              company_id: companyId,
-              job_id: jobId,
-              start_date: toDateStr(dateRange.from),
-              end_date: dateRange.to ? toDateStr(dateRange.to) : null,
-              created_at: toDateTimeStr(new Date()),
-            },
           },
-        }])
+        ])
       }
 
       await Promise.all([
@@ -631,11 +933,24 @@ function AddCareerCard({
     }
     try {
       const newEnd = dateRange.to ?? FAR_FUTURE
-      const overlaps = findAllOverlaps(dateRange.from, newEnd, '', allFT, allEMP)
-      if (overlaps.length > 0) { setOverlapInfos(overlaps); setOverlapNewStart(dateRange.from); return }
+      const overlaps = findAllOverlaps(
+        dateRange.from,
+        newEnd,
+        '',
+        allFT,
+        allEMP
+      )
+      if (overlaps.length > 0) {
+        setOverlapInfos(overlaps)
+        setOverlapNewStart(dateRange.from)
+        return
+      }
       doAdd()
     } catch {
-      toast({ variant: 'destructive', title: '겹침 확인 중 오류가 발생했습니다.' })
+      toast({
+        variant: 'destructive',
+        title: '겹침 확인 중 오류가 발생했습니다.',
+      })
     }
   }
 
@@ -692,7 +1007,9 @@ function AddCareerCard({
                 <Calendar
                   mode='single'
                   selected={dateRange?.from}
-                  onSelect={(date) => date && setDateRange({ from: date, to: undefined })}
+                  onSelect={(date) =>
+                    date && setDateRange({ from: date, to: undefined })
+                  }
                   className='rounded-lg border border-border p-2'
                 />
               ) : (
@@ -709,7 +1026,9 @@ function AddCareerCard({
           <div className='space-y-1.5'>
             <p className='text-sm font-medium'>직무</p>
             <Select onValueChange={(v) => setJobId(Number(v))}>
-              <SelectTrigger><SelectValue placeholder='직무 선택' /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder='직무 선택' />
+              </SelectTrigger>
               <SelectContent>
                 {jobs.map((job) => (
                   <SelectItem key={job.job_id} value={String(job.job_id)}>
@@ -724,14 +1043,19 @@ function AddCareerCard({
           <div className='space-y-1.5'>
             <p className='text-sm font-medium'>회사명</p>
             <Select onValueChange={(v) => setCompanyId(Number(v))}>
-              <SelectTrigger><SelectValue placeholder='회사 선택' /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder='회사 선택' />
+              </SelectTrigger>
               <SelectContent>
                 {companies.map((c) => (
                   <SelectItem key={c.company_id} value={String(c.company_id)}>
                     {c.company_name}
                   </SelectItem>
                 ))}
-                <AddFieldTrainingOption type='company' onSuccess={refetchCompanies} />
+                <AddFieldTrainingOption
+                  type='company'
+                  onSuccess={refetchCompanies}
+                />
               </SelectContent>
             </Select>
           </div>
@@ -741,26 +1065,53 @@ function AddCareerCard({
               <div>
                 <p className='text-sm font-medium'>취업으로 이어지기</p>
                 <p className='text-xs text-muted-foreground'>
-                  현장실습 종료 다음날부터 같은 회사·직무로 취업 이력을 자동 등록합니다.
+                  현장실습 종료 다음날부터 같은 회사·직무로 취업 이력을 자동
+                  등록합니다.
                 </p>
               </div>
-              <Switch checked={autoEmployment} onCheckedChange={setAutoEmployment} id='auto-emp' />
+              <Switch
+                checked={autoEmployment}
+                onCheckedChange={setAutoEmployment}
+                id='auto-emp'
+              />
             </div>
           )}
         </>
       )}
 
       <div className='flex gap-2 pt-1'>
-        <Button variant='outline' size='sm' className='flex-1' onClick={reset}>취소</Button>
-        <Button size='sm' className='flex-1' onClick={handleAdd} disabled={!careerType}>추가</Button>
+        <Button variant='outline' size='sm' className='flex-1' onClick={reset}>
+          취소
+        </Button>
+        <Button
+          size='sm'
+          className='flex-1'
+          onClick={handleAdd}
+          disabled={!careerType}
+        >
+          추가
+        </Button>
       </div>
 
       <CareerOverlapDialog
         open={overlapInfos.length > 0}
-        onOpenChange={(open) => { if (!open) { setOverlapInfos([]); setOverlapNewStart(null) } }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOverlapInfos([])
+            setOverlapNewStart(null)
+          }
+        }}
         overlaps={overlapInfos}
-        adjustedEndDate={overlapNewStart ? toDateStr(new Date(overlapNewStart.getTime() - 86400000)) : null}
-        onSaveAnyway={() => { setOverlapInfos([]); setOverlapNewStart(null); doAdd() }}
+        adjustedEndDate={
+          overlapNewStart
+            ? toDateStr(new Date(overlapNewStart.getTime() - 86400000))
+            : null
+        }
+        onSaveAnyway={() => {
+          setOverlapInfos([])
+          setOverlapNewStart(null)
+          doAdd()
+        }}
         onAdjustAndSave={async () => {
           if (!overlapInfos.length || !overlapNewStart) return
           const adjustedEnd = new Date(overlapNewStart)
@@ -769,17 +1120,56 @@ function AddCareerCard({
           try {
             for (const info of overlapInfos) {
               if (info.type === 'field_training') {
-                const target = allFT.find(f => f.start_date === info.startDate && (f.companies?.company_name ?? '') === info.companyName)
-                if (target) await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: target.company_id, job_id: target.job_id, start_date: target.start_date, end_date: adjustedEndStr } } }])
+                const target = allFT.find(
+                  (f) =>
+                    f.start_date === info.startDate &&
+                    (f.companies?.company_name ?? '') === info.companyName
+                )
+                if (target)
+                  await ftMutate([
+                    {
+                      action: 'update',
+                      datas: {
+                        field_training: {
+                          student_id: studentId,
+                          company_id: target.company_id,
+                          job_id: target.job_id,
+                          start_date: target.start_date,
+                          end_date: adjustedEndStr,
+                        },
+                      },
+                    },
+                  ])
               } else {
-                const target = allEMP.find(e => e.start_date === info.startDate && (e.companies?.company_name ?? '') === info.companyName)
-                if (target) await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: target.company_id, job_id: target.job_id, start_date: target.start_date, end_date: adjustedEndStr, deleted_at: null } } }])
+                const target = allEMP.find(
+                  (e) =>
+                    e.start_date === info.startDate &&
+                    (e.companies?.company_name ?? '') === info.companyName
+                )
+                if (target)
+                  await empMutate([
+                    {
+                      action: 'update',
+                      datas: {
+                        employment_companies: {
+                          student_id: studentId,
+                          company_id: target.company_id,
+                          job_id: target.job_id,
+                          start_date: target.start_date,
+                          end_date: adjustedEndStr,
+                          deleted_at: null,
+                        },
+                      },
+                    },
+                  ])
               }
             }
             setOverlapInfos([])
             setOverlapNewStart(null)
             await doAdd()
-          } catch { toast({ variant: 'destructive', title: '처리에 실패했습니다.' }) }
+          } catch {
+            toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
+          }
         }}
       />
     </div>
@@ -802,10 +1192,22 @@ export const Career = ({
   const items: CareerItem[] = [
     ...fieldTraining
       .filter((ft) => !ft.deleted_at)
-      .map((ft): CareerItem => ({ type: 'field_training', data: ft, startDate: new Date(ft.start_date) })),
+      .map(
+        (ft): CareerItem => ({
+          type: 'field_training',
+          data: ft,
+          startDate: new Date(ft.start_date),
+        })
+      ),
     ...employment
       .filter((e) => !e.deleted_at)
-      .map((e): CareerItem => ({ type: 'employment', data: e, startDate: new Date(e.start_date) })),
+      .map(
+        (e): CareerItem => ({
+          type: 'employment',
+          data: e,
+          startDate: new Date(e.start_date),
+        })
+      ),
   ].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
 
   const ongoingEnd = (startDate: string) => {
@@ -816,18 +1218,26 @@ export const Career = ({
 
   const ftRanges = fieldTraining
     .filter((ft) => !ft.deleted_at && ft.start_date)
-    .map((ft) => ({ from: parseLocalDate(ft.start_date!), to: ft.end_date ? parseLocalDate(ft.end_date) : ongoingEnd(ft.start_date!) }))
+    .map((ft) => ({
+      from: parseLocalDate(ft.start_date!),
+      to: ft.end_date
+        ? parseLocalDate(ft.end_date)
+        : ongoingEnd(ft.start_date!),
+    }))
 
   const empRanges = employment
     .filter((e) => !e.deleted_at && e.start_date)
-    .map((e) => ({ from: parseLocalDate(e.start_date!), to: e.end_date ? parseLocalDate(e.end_date) : ongoingEnd(e.start_date!) }))
+    .map((e) => ({
+      from: parseLocalDate(e.start_date!),
+      to: e.end_date ? parseLocalDate(e.end_date) : ongoingEnd(e.start_date!),
+    }))
 
   const hasCalendarData = ftRanges.length > 0 || empRanges.length > 0
 
   return (
     <div className='space-y-5'>
       {/* 캘린더 */}
-      {hasCalendarData ? (
+      {hasCalendarData && (
         <div>
           <div className='mb-3 flex gap-4 text-sm'>
             <span className='flex items-center gap-1.5'>
@@ -849,15 +1259,22 @@ export const Career = ({
               employment: (date) => isInRanges(date, empRanges),
             }}
             modifiersStyles={{
-              fieldTraining: { backgroundColor: 'rgb(134 239 172 / 0.6)', borderRadius: 0 },
-              employment: { backgroundColor: 'rgb(147 197 253 / 0.6)', borderRadius: 0 },
+              fieldTraining: {
+                backgroundColor: 'rgb(134 239 172 / 0.6)',
+                borderRadius: 0,
+              },
+              employment: {
+                backgroundColor: 'rgb(147 197 253 / 0.6)',
+                borderRadius: 0,
+              },
             }}
             components={{
               IconLeft: () => <ChevronLeft className='h-4 w-4' />,
               IconRight: () => <ChevronRight className='h-4 w-4' />,
             }}
             classNames={{
-              months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
+              months:
+                'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
               month: 'space-y-4 w-full',
               caption: 'flex justify-center pt-1 relative items-center',
               caption_label: 'text-sm font-medium',
@@ -870,18 +1287,20 @@ export const Career = ({
               nav_button_next: 'absolute right-1',
               table: 'w-full border-collapse space-y-1',
               head_row: 'flex justify-around',
-              head_cell: 'text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem]',
+              head_cell:
+                'text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem]',
               row: 'flex w-full mt-2',
               cell: 'relative flex-1 p-0 text-center text-sm focus-within:relative focus-within:z-20',
-              day: cn(buttonVariants({ variant: 'ghost' }), 'w-full h-8 p-0 font-normal pointer-events-none'),
+              day: cn(
+                buttonVariants({ variant: 'ghost' }),
+                'w-full h-8 p-0 font-normal pointer-events-none'
+              ),
               day_today: 'bg-accent text-accent-foreground',
               day_outside: 'text-muted-foreground opacity-50',
               day_hidden: 'invisible',
             }}
           />
         </div>
-      ) : (
-        <p className='text-center text-sm text-muted-foreground'>표시할 기간 정보가 없습니다.</p>
       )}
 
       {/* 통합 경력 목록 */}

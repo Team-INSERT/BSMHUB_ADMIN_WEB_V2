@@ -33,7 +33,8 @@ export default function FieldTrainingEndDialog({
         <DialogHeader>
           <DialogTitle>현장실습 조기종료</DialogTitle>
           <DialogDescription>
-            실제 종료일을 선택하세요. 연결된 취업 이력은 자동으로 함께 삭제됩니다.
+            실제 종료일을 선택하세요. 연결된 취업 이력은 자동으로 함께
+            삭제됩니다.
           </DialogDescription>
         </DialogHeader>
         <div className='flex w-full flex-col gap-3'>
