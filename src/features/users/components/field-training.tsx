@@ -86,7 +86,7 @@ export const FieldTraining = ({
 
   useEffect(() => {
     if (
-      editingSection === 'field_training' &&
+      editingSection === 'career' &&
       updateDate?.from &&
       updateDate?.to &&
       updateJob !== null &&
@@ -215,7 +215,7 @@ export const FieldTraining = ({
           onConfirm={handleEarlyEnd}
         />
       )}
-      {editingSection === 'field_training' ? (
+      {editingSection === 'career' ? (
         <div className='space-y-4'>
           {/* 현장실습 수정 */}
           <div className='space-y-4'>

@@ -9,12 +9,9 @@ import { Separator } from '@/components/ui/separator'
 import Loader from '@/components/loader'
 import { DetailType, useEditUser } from '../context/edit-context'
 import { UserDetailType } from '../data/schema'
-import { useHandleEmploymentMutation } from '../services/employment-companies/handleEmployment'
-import { useHandleFieldTrainingMutation } from '../services/field-training/handleFieldTraining'
 import { useUserDetailQuery } from '../services/selectUser'
 import { useUserListQuery } from '../services/seleteUserList'
-import { Employment } from './employment'
-import { FieldTraining } from './field-training'
+import { Career } from './career'
 import { MiddleSchool } from './middle-school'
 import { MilitaryService } from './military-service'
 import { StudentActivities } from './student-activities'
@@ -27,7 +24,7 @@ type ValueItemsType = {
   canEdit?: boolean
 }
 
-const componentsMap: Record<Exclude<DetailType, 'after_courses'>, ValueItemsType> = {
+const componentsMap: Record<DetailType, ValueItemsType> = {
   certificates: {
     label: '취득 자격증',
     component: (data) => (
@@ -47,17 +44,13 @@ const componentsMap: Record<Exclude<DetailType, 'after_courses'>, ValueItemsType
     ),
     canEdit: false,
   },
-  field_training: {
-    label: '현장 실습',
-    component: (data) => <FieldTraining datas={data.field_training} />,
-  },
-  employment: {
-    label: '취업',
+  career: {
+    label: '경력',
+    canEdit: false,
     component: (data) => (
-      <Employment
-        datas={data.employment_companies.filter(
-          (item: UserDetailType['employment_companies'][0]) => !item.deleted_at
-        )}
+      <Career
+        fieldTraining={data.field_training}
+        employment={data.employment_companies}
       />
     ),
   },
@@ -78,35 +71,12 @@ const componentsMap: Record<Exclude<DetailType, 'after_courses'>, ValueItemsType
 }
 
 export function StudentDetail({ student_id }: { student_id: string }) {
-  const { editingSection, setEditingSection, editData, setEditData } =
-    useEditUser()
+  const { editingSection, setEditingSection, setEditData } = useEditUser()
   const { data, isLoading, refetch, isFetching } =
     useUserDetailQuery(student_id)
   const { refetch: userRefetch } = useUserListQuery()
-  const { mutateAsync: handleFieldTrainingMutation } =
-    useHandleFieldTrainingMutation()
-  const { mutateAsync: handleEmploymentMutation } =
-    useHandleEmploymentMutation()
 
   const saveEditing = async () => {
-    if (!editData) return
-
-    // 현장실습 데이터 처리
-    const fieldTrainingData = editData.filter(
-      (item) => 'field_training' in item.datas
-    )
-    if (fieldTrainingData.length > 0) {
-      await handleFieldTrainingMutation(fieldTrainingData)
-    }
-
-    // 취업 데이터 처리
-    const employmentData = editData.filter(
-      (item) => 'employment_companies' in item.datas
-    )
-    if (employmentData.length > 0) {
-      await handleEmploymentMutation(employmentData)
-    }
-
     await refetch()
     setEditingSection(null)
     await userRefetch()
@@ -140,7 +110,7 @@ export function StudentDetail({ student_id }: { student_id: string }) {
         </CardHeader>
 
         <CardContent className='space-y-5'>
-          {(Object.keys(componentsMap) as Exclude<DetailType, 'after_courses'>[]).map((key) => {
+          {(Object.keys(componentsMap) as DetailType[]).map((key) => {
             return (
               <div key={key}>
                 <div className='mb-2 flex items-center justify-between'>

@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
 } from '@/components/ui/dialog'
-import { Switch } from '@/components/ui/switch'
 
 export default function FieldTrainingEndDialog({
   open,
@@ -22,37 +21,29 @@ export default function FieldTrainingEndDialog({
   onConfirm: (endDate: string, deleteEmployment: boolean) => void
 }) {
   const [updateDate, setUpdateDate] = useState<Date>(new Date())
-  const [deleteEmployment, setDeleteEmployment] = useState<boolean>(true)
 
   const handleConfirm = () => {
-    onConfirm(formatDate(updateDate), deleteEmployment)
+    onConfirm(formatDate(updateDate), true)
     onOpenChange(false)
   }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>현장실습 조기종료 처리</DialogTitle>
+          <DialogTitle>현장실습 조기종료</DialogTitle>
           <DialogDescription>
-            현장실습을 조기종료 처리하시겠습니까? 조기종료 처리 시, 현장실습
-            종료일이 변경되며, 원할 경우 취업 정보도 함께 삭제됩니다.
+            실제 종료일을 선택하세요. 연결된 취업 이력은 자동으로 함께 삭제됩니다.
           </DialogDescription>
         </DialogHeader>
-        <div className='-mr-4 flex w-full flex-col gap-4 overflow-y-auto py-1 pr-4'>
-          <span>종료일 선택</span>
+        <div className='flex w-full flex-col gap-3'>
+          <p className='text-sm font-medium'>종료일</p>
           <div className='flex'>
             <Calendar
               mode='single'
               selected={updateDate}
               onSelect={(date) => date && setUpdateDate(date)}
               className='rounded-lg border border-border p-2'
-            />
-          </div>
-          <div className='flex items-center gap-4'>
-            <span>취업 삭제</span>
-            <Switch
-              checked={deleteEmployment}
-              onCheckedChange={setDeleteEmployment}
             />
           </div>
         </div>

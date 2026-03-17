@@ -68,7 +68,7 @@ export const Employment = ({
 
   useEffect(() => {
     if (
-      editingSection === 'employment' &&
+      editingSection === 'career' &&
       updateDate?.from &&
       updateDate?.to &&
       updateJob !== null &&
@@ -103,7 +103,7 @@ export const Employment = ({
 
   return (
     <div>
-      {editingSection === 'employment' ? (
+      {editingSection === 'career' ? (
         <div className='space-y-4'>
           {/* 취업 수정 */}
           <div className='space-y-4'>

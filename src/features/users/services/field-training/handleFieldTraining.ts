@@ -1,7 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import supabase from '@/utils/supabase/client'
 import { Database } from '@/utils/supabase/database.types'
-import { useToast } from '@/hooks/use-toast'
 import { UserEditType } from '../../data/schema'
 
 type FieldTrainingInsert =
@@ -77,35 +76,8 @@ const handleFieldTraining = async (editDataList: UserEditType) => {
 
 // react-query mutation hook
 export const useHandleFieldTrainingMutation = () => {
-  const queryClient = useQueryClient()
-  const { toast } = useToast()
-
   const mutation = useMutation({
     mutationFn: handleFieldTraining,
-    onSuccess: (_data, variables) => {
-      // 더 강력한 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: ['field_training'] })
-      queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey[0] === 'user-' ||
-          (typeof query.queryKey[0] === 'string' &&
-            query.queryKey[0].startsWith('user-')),
-      })
-
-      toast({
-        variant: 'default',
-        title: '현장실습 데이터 처리 성공!',
-        description: JSON.stringify(variables, null, 2),
-      })
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: 'destructive',
-        title: '현장실습 데이터 처리 실패',
-        description: error?.message || '알 수 없는 오류가 발생했습니다.',
-      })
-    },
   })
 
   return {
