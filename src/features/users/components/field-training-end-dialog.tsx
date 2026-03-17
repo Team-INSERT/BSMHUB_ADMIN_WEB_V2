@@ -1,27 +1,43 @@
 import { useState } from 'react'
-import { DialogTitle } from '@radix-ui/react-dialog'
 import { formatDate } from '@/utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
+  DialogTitle,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
+import { ReasonSelect } from './reason-select'
+
+const EARLY_END_REASONS = ['개인 사정', '회사 사정', '건강 문제']
+const CONVERT_REASONS = ['채용 전환', '조기 취업']
 
 export default function FieldTrainingEndDialog({
   open,
   onOpenChange,
   onConfirm,
+  startDate,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: (endDate: string, convertToEmployment: boolean) => void
+  startDate: Date
 }) {
-  const [updateDate, setUpdateDate] = useState<Date>(new Date())
+  const [updateDate, setUpdateDate] = useState<Date>(() =>
+    new Date() >= startDate ? new Date() : startDate
+  )
   const [convertToEmployment, setConvertToEmployment] = useState(false)
+  const [reason, setReason] = useState('')
+  const [reasonEtc, setReasonEtc] = useState('')
+
+  const handleConvertToggle = (v: boolean) => {
+    setConvertToEmployment(v)
+    setReason('')
+    setReasonEtc('')
+  }
 
   const handleConfirm = () => {
     onConfirm(formatDate(updateDate), convertToEmployment)
@@ -41,6 +57,7 @@ export default function FieldTrainingEndDialog({
               mode='single'
               selected={updateDate}
               onSelect={(date) => date && setUpdateDate(date)}
+              disabled={{ before: startDate }}
               className='rounded-lg border border-border p-2'
             />
           </div>
@@ -55,9 +72,17 @@ export default function FieldTrainingEndDialog({
             </div>
             <Switch
               checked={convertToEmployment}
-              onCheckedChange={setConvertToEmployment}
+              onCheckedChange={handleConvertToggle}
             />
           </div>
+          <ReasonSelect
+            label={convertToEmployment ? '전환 사유' : '조기종료 사유'}
+            options={convertToEmployment ? CONVERT_REASONS : EARLY_END_REASONS}
+            value={reason}
+            onChange={setReason}
+            etcValue={reasonEtc}
+            onEtcChange={setReasonEtc}
+          />
         </div>
         <DialogFooter>
           <Button variant='outline' onClick={() => onOpenChange(false)}>

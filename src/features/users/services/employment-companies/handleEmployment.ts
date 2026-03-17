@@ -35,7 +35,6 @@ const handleEmployment = async (editDataList: UserEditType) => {
       start_date: data.start_date,
       end_date: data.end_date,
       job_id: data.job_id,
-      deleted_at: data.deleted_at,
     }
 
     switch (editData.action) {
@@ -47,12 +46,14 @@ const handleEmployment = async (editDataList: UserEditType) => {
         break
       }
       case 'update': {
+        const filterStartDate = data.original_start_date ?? data.start_date
         const { error } = await supabase
           .from('employment_companies')
           .update(updateData)
           .eq('student_id', data.student_id)
           .eq('company_id', data.company_id)
-          .eq('start_date', data.start_date)
+          .eq('start_date', filterStartDate)
+          .is('deleted_at', null)
         if (error) throw new Error(error.message)
         break
       }
@@ -63,6 +64,7 @@ const handleEmployment = async (editDataList: UserEditType) => {
           .eq('student_id', data.student_id)
           .eq('company_id', data.company_id)
           .eq('job_id', data.job_id)
+          .is('deleted_at', null)
         if (error) throw new Error(error.message)
         break
       }

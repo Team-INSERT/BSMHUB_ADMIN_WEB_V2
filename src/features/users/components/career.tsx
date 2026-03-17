@@ -17,7 +17,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -41,8 +40,10 @@ import { useHandleEmploymentMutation } from '../services/employment-companies/ha
 import { useHandleFieldTrainingMutation } from '../services/field-training/handleFieldTraining'
 import { useJobListQuery } from '../services/field-training/selectJobList'
 import { AddFieldTrainingOption } from './add-field-training-option'
-import { CareerOverlapDialog, OverlapInfo } from './career-overlap-dialog'
 import FieldTrainingEndDialog from './field-training-end-dialog'
+import { ReasonSelect } from './reason-select'
+
+const RESIGNATION_REASONS = ['졸업', '계약 만료', '자진 퇴사', '권고 사직']
 
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
 
@@ -87,39 +88,110 @@ const FAR_FUTURE = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
 const rangesOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
   aStart.getTime() <= bEnd.getTime() && aEnd.getTime() >= bStart.getTime()
 
-function findAllOverlaps(
+type OverlapAdjustment =
+  | { kind: 'trim-end'; newEnd: Date }   // 기존 end를 newStart-1로 자름
+  | { kind: 'push-start'; newStart: Date } // 기존 start를 newEnd+1로 밀어냄
+  | { kind: 'block' }                    // 완전히 덮혀서 불가능
+
+type OverlapTarget =
+  | { type: 'field_training'; target: FT; adjustment: OverlapAdjustment }
+  | { type: 'employment'; target: EMP; adjustment: OverlapAdjustment }
+
+function OverlapConfirmDialog({
+  overlaps,
+  onConfirm,
+  onCancel,
+}: {
+  overlaps: OverlapTarget[]
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>기간 겹침 확인</DialogTitle>
+          <DialogDescription>
+            저장하면 아래 항목이 자동으로 조정됩니다.
+          </DialogDescription>
+        </DialogHeader>
+        <div className='space-y-2'>
+          {overlaps.map((o, i) => {
+            const name = o.target.companies?.company_name
+            const startDate = o.target.start_date
+            const endDate = o.target.end_date
+            const adj = o.adjustment
+            return (
+              <div key={i} className='rounded-md border p-3 text-sm'>
+                <p className='font-medium'>{name}</p>
+                <p className='text-muted-foreground'>
+                  {formatDate(startDate)} ~{' '}
+                  {endDate ? formatDate(endDate) : '현재'}
+                </p>
+                {adj.kind === 'trim-end' && (
+                  <p className='mt-1 text-xs text-orange-600'>
+                    → 종료일이 {formatDate(toDateStr(adj.newEnd))}로 조정됩니다.
+                  </p>
+                )}
+                {adj.kind === 'push-start' && (
+                  <p className='mt-1 text-xs text-orange-600'>
+                    → 시작일이 {formatDate(toDateStr(adj.newStart))}로 조정됩니다.
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <DialogFooter>
+          <Button variant='outline' onClick={onCancel}>
+            취소
+          </Button>
+          <Button onClick={onConfirm}>저장</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// S = max(newStart, existStart), E = min(newEnd, existEnd)
+function calcAdjustment(newStart: Date, newEnd: Date, existStart: Date, existEnd: Date): OverlapAdjustment {
+  if (newStart.getTime() > existStart.getTime()) {
+    // 수정 레코드가 기존 레코드 중간에서 시작 → 기존 end를 newStart-1로 자름
+    return { kind: 'trim-end', newEnd: new Date(newStart.getTime() - 86400000) }
+  } else {
+    // 수정 레코드가 기존 레코드 시작과 같거나 앞 → 기존 start를 newEnd+1로 밀어냄
+    const pushedStart = new Date(newEnd.getTime() + 86400000)
+    if (pushedStart.getTime() > existEnd.getTime()) {
+      // 기존 레코드를 완전히 덮어버림 → 불가능
+      return { kind: 'block' }
+    }
+    return { kind: 'push-start', newStart: pushedStart }
+  }
+}
+
+function checkOverlaps(
   newStart: Date,
   newEnd: Date,
   selfKey: string,
   allFT: FT[],
   allEMP: EMP[]
-): OverlapInfo[] {
-  const results: OverlapInfo[] = []
+): OverlapTarget[] {
+  const results: OverlapTarget[] = []
   for (const ft of allFT) {
     const ftKey = `ft-${ft.company_id}-${ft.job_id}-${ft.start_date}`
     if (ftKey === selfKey || !!ft.deleted_at) continue
-    const s = parseLocalDate(ft.start_date)
-    const e = ft.end_date ? parseLocalDate(ft.end_date) : FAR_FUTURE
-    if (rangesOverlap(newStart, newEnd, s, e))
-      results.push({
-        type: 'field_training',
-        companyName: ft.companies?.company_name ?? '',
-        startDate: ft.start_date,
-        endDate: ft.end_date,
-      })
+    const existStart = parseLocalDate(ft.start_date)
+    const existEnd = ft.end_date ? parseLocalDate(ft.end_date) : FAR_FUTURE
+    if (!rangesOverlap(newStart, newEnd, existStart, existEnd)) continue
+    results.push({ type: 'field_training', target: ft, adjustment: calcAdjustment(newStart, newEnd, existStart, existEnd) })
   }
   for (const emp of allEMP) {
     const empKey = `emp-${emp.company_id}-${emp.job_id}-${emp.start_date}`
     if (empKey === selfKey || !!emp.deleted_at) continue
-    const s = parseLocalDate(emp.start_date)
-    const e = emp.end_date ? parseLocalDate(emp.end_date) : FAR_FUTURE
-    if (rangesOverlap(newStart, newEnd, s, e))
-      results.push({
-        type: 'employment',
-        companyName: emp.companies?.company_name ?? '',
-        startDate: emp.start_date,
-        endDate: emp.end_date,
-      })
+    const existStart = parseLocalDate(emp.start_date)
+    const existEnd = emp.end_date ? parseLocalDate(emp.end_date) : FAR_FUTURE
+    if (!rangesOverlap(newStart, newEnd, existStart, existEnd)) continue
+    results.push({ type: 'employment', target: emp, adjustment: calcAdjustment(newStart, newEnd, existStart, existEnd) })
   }
   return results
 }
@@ -151,8 +223,7 @@ function FieldTrainingCard({
   })
   const [jobId, setJobId] = useState(ft.job_id)
   const [endDialogOpen, setEndDialogOpen] = useState(false)
-  const [overlapInfos, setOverlapInfos] = useState<OverlapInfo[]>([])
-  const [overlapNewStart, setOverlapNewStart] = useState<Date | null>(null)
+  const [pendingOverlaps, setPendingOverlaps] = useState<OverlapTarget[] | null>(null)
 
   const { data: jobs = [] } = useJobListQuery()
   const { mutateAsync: ftMutate } = useHandleFieldTrainingMutation()
@@ -188,80 +259,50 @@ function FieldTrainingCard({
     toast({ title: '저장되었습니다.' })
   }
 
-  const handleSave = async () => {
+  const applyOverlapsAndSave = async (overlaps: OverlapTarget[]) => {
     try {
-      const newStart = dateRange.from ?? new Date(ft.start_date)
-      const newEnd =
-        dateRange.to ?? (ft.end_date ? new Date(ft.end_date) : FAR_FUTURE)
-      const overlaps = findAllOverlaps(newStart, newEnd, selfKey, allFT, allEMP)
-      if (overlaps.length > 0) {
-        setOverlapInfos(overlaps)
-        setOverlapNewStart(newStart)
-        return
+      for (const overlap of overlaps) {
+        const adj = overlap.adjustment
+        if (overlap.type === 'field_training') {
+          const t = overlap.target
+          if (adj.kind === 'trim-end') {
+            await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+          } else if (adj.kind === 'push-start') {
+            await ftMutate([{ action: 'delete', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: t.end_date ?? '' } } }])
+            await ftMutate([{ action: 'add', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: toDateStr(adj.newStart), end_date: t.end_date, lead_or_part: t.lead_or_part, created_at: toDateTimeStr(new Date()) } } }])
+          }
+        } else {
+          const t = overlap.target
+          if (adj.kind === 'trim-end') {
+            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+          } else if (adj.kind === 'push-start') {
+            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: toDateStr(adj.newStart), end_date: t.end_date } } }])
+          }
+        }
       }
+      setPendingOverlaps(null)
       await doSave()
     } catch {
       toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
     }
   }
 
-  const handleAdjustAndSave = async () => {
-    if (!overlapInfos.length || !overlapNewStart) return
-    const adjustedEnd = new Date(overlapNewStart)
-    adjustedEnd.setDate(adjustedEnd.getDate() - 1)
-    const adjustedEndStr = toDateStr(adjustedEnd)
+  const handleSave = async () => {
     try {
-      for (const info of overlapInfos) {
-        if (info.type === 'field_training') {
-          const target = allFT.find(
-            (f) =>
-              f.start_date === info.startDate &&
-              (f.companies?.company_name ?? '') === info.companyName
-          )
-          if (target)
-            await ftMutate([
-              {
-                action: 'update',
-                datas: {
-                  field_training: {
-                    student_id: studentId,
-                    company_id: target.company_id,
-                    job_id: target.job_id,
-                    start_date: target.start_date,
-                    end_date: adjustedEndStr,
-                  },
-                },
-              },
-            ])
-        } else {
-          const target = allEMP.find(
-            (e) =>
-              e.start_date === info.startDate &&
-              (e.companies?.company_name ?? '') === info.companyName
-          )
-          if (target)
-            await empMutate([
-              {
-                action: 'update',
-                datas: {
-                  employment_companies: {
-                    student_id: studentId,
-                    company_id: target.company_id,
-                    job_id: target.job_id,
-                    start_date: target.start_date,
-                    end_date: adjustedEndStr,
-                    deleted_at: null,
-                  },
-                },
-              },
-            ])
-        }
+      const newStart = dateRange.from ?? parseLocalDate(ft.start_date)
+      const newEnd = dateRange.to ?? (ft.end_date ? parseLocalDate(ft.end_date) : FAR_FUTURE)
+      const overlaps = checkOverlaps(newStart, newEnd, selfKey, allFT, allEMP)
+      if (overlaps.some((o) => o.adjustment.kind === 'block')) {
+        toast({ variant: 'destructive', title: '기존 기간을 완전히 덮어버려 저장할 수 없습니다.' })
+        return
       }
-      setOverlapInfos([])
-      setOverlapNewStart(null)
+      if (overlaps.length > 0) {
+        setPendingOverlaps(overlaps)
+        return
+      }
       await doSave()
     } catch {
-      toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
+      toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
     }
   }
 
@@ -475,32 +516,15 @@ function FieldTrainingCard({
         open={endDialogOpen}
         onOpenChange={setEndDialogOpen}
         onConfirm={handleEarlyEnd}
+        startDate={parseLocalDate(ft.start_date)}
       />
-      <CareerOverlapDialog
-        open={overlapInfos.length > 0}
-        onOpenChange={(open) => {
-          if (!open) {
-            setOverlapInfos([])
-            setOverlapNewStart(null)
-          }
-        }}
-        overlaps={overlapInfos}
-        adjustedEndDate={
-          overlapNewStart
-            ? toDateStr(new Date(overlapNewStart.getTime() - 86400000))
-            : null
-        }
-        onSaveAnyway={async () => {
-          setOverlapInfos([])
-          setOverlapNewStart(null)
-          try {
-            await doSave()
-          } catch {
-            toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
-          }
-        }}
-        onAdjustAndSave={handleAdjustAndSave}
-      />
+      {pendingOverlaps && (
+        <OverlapConfirmDialog
+          overlaps={pendingOverlaps}
+          onConfirm={() => applyOverlapsAndSave(pendingOverlaps)}
+          onCancel={() => setPendingOverlaps(null)}
+        />
+      )}
     </div>
   )
 }
@@ -525,10 +549,12 @@ function EmploymentCard({
     to: emp.end_date ? parseLocalDate(emp.end_date) : undefined,
   })
   const [jobId, setJobId] = useState(emp.job_id)
-  const [overlapInfos, setOverlapInfos] = useState<OverlapInfo[]>([])
-  const [overlapNewStart, setOverlapNewStart] = useState<Date | null>(null)
   const [endDialogOpen, setEndDialogOpen] = useState(false)
-  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [pendingOverlaps, setPendingOverlaps] = useState<OverlapTarget[] | null>(null)
+  const [endDate, setEndDate] = useState<Date>(() => {
+    const start = parseLocalDate(emp.start_date)
+    return new Date() >= start ? new Date() : start
+  })
   const [endReason, setEndReason] = useState('')
   const [endReasonEtc, setEndReasonEtc] = useState('')
 
@@ -553,11 +579,11 @@ function EmploymentCard({
             student_id: studentId,
             company_id: emp.company_id,
             job_id: jobId,
+            original_start_date: emp.start_date,
             start_date: dateRange.from
               ? toDateStr(dateRange.from)
               : emp.start_date,
             end_date: dateRange.to ? toDateStr(dateRange.to) : null,
-            deleted_at: null,
           },
         },
       },
@@ -567,79 +593,50 @@ function EmploymentCard({
     toast({ title: '저장되었습니다.' })
   }
 
-  const handleSave = async () => {
+  const applyOverlapsAndSave = async (overlaps: OverlapTarget[]) => {
     try {
-      const newStart = dateRange.from ?? new Date(emp.start_date)
-      const newEnd = dateRange.to ?? FAR_FUTURE
-      const overlaps = findAllOverlaps(newStart, newEnd, selfKey, allFT, allEMP)
-      if (overlaps.length > 0) {
-        setOverlapInfos(overlaps)
-        setOverlapNewStart(newStart)
-        return
+      for (const overlap of overlaps) {
+        const adj = overlap.adjustment
+        if (overlap.type === 'field_training') {
+          const t = overlap.target
+          if (adj.kind === 'trim-end') {
+            await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+          } else if (adj.kind === 'push-start') {
+            await ftMutate([{ action: 'delete', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: t.end_date ?? '' } } }])
+            await ftMutate([{ action: 'add', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: toDateStr(adj.newStart), end_date: t.end_date, lead_or_part: t.lead_or_part, created_at: toDateTimeStr(new Date()) } } }])
+          }
+        } else {
+          const t = overlap.target
+          if (adj.kind === 'trim-end') {
+            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+          } else if (adj.kind === 'push-start') {
+            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: toDateStr(adj.newStart), end_date: t.end_date } } }])
+          }
+        }
       }
+      setPendingOverlaps(null)
       await doSave()
     } catch {
       toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
     }
   }
 
-  const handleAdjustAndSave = async () => {
-    if (!overlapInfos.length || !overlapNewStart) return
-    const adjustedEnd = new Date(overlapNewStart)
-    adjustedEnd.setDate(adjustedEnd.getDate() - 1)
-    const adjustedEndStr = toDateStr(adjustedEnd)
+  const handleSave = async () => {
     try {
-      for (const info of overlapInfos) {
-        if (info.type === 'field_training') {
-          const target = allFT.find(
-            (f) =>
-              f.start_date === info.startDate &&
-              (f.companies?.company_name ?? '') === info.companyName
-          )
-          if (target)
-            await ftMutate([
-              {
-                action: 'update',
-                datas: {
-                  field_training: {
-                    student_id: studentId,
-                    company_id: target.company_id,
-                    job_id: target.job_id,
-                    start_date: target.start_date,
-                    end_date: adjustedEndStr,
-                  },
-                },
-              },
-            ])
-        } else {
-          const target = allEMP.find(
-            (e) =>
-              e.start_date === info.startDate &&
-              (e.companies?.company_name ?? '') === info.companyName
-          )
-          if (target)
-            await empMutate([
-              {
-                action: 'update',
-                datas: {
-                  employment_companies: {
-                    student_id: studentId,
-                    company_id: target.company_id,
-                    job_id: target.job_id,
-                    start_date: target.start_date,
-                    end_date: adjustedEndStr,
-                    deleted_at: null,
-                  },
-                },
-              },
-            ])
-        }
+      const newStart = dateRange.from ?? parseLocalDate(emp.start_date)
+      const newEnd = dateRange.to ?? FAR_FUTURE
+      const overlaps = checkOverlaps(newStart, newEnd, selfKey, allFT, allEMP)
+      if (overlaps.some((o) => o.adjustment.kind === 'block')) {
+        toast({ variant: 'destructive', title: '기존 기간을 완전히 덮어버려 저장할 수 없습니다.' })
+        return
       }
-      setOverlapInfos([])
-      setOverlapNewStart(null)
+      if (overlaps.length > 0) {
+        setPendingOverlaps(overlaps)
+        return
+      }
       await doSave()
     } catch {
-      toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
+      toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
     }
   }
 
@@ -677,9 +674,9 @@ function EmploymentCard({
               student_id: studentId,
               company_id: emp.company_id,
               job_id: emp.job_id,
+              original_start_date: emp.start_date,
               start_date: emp.start_date,
               end_date: toDateStr(endDate),
-              deleted_at: null,
             },
           },
         },
@@ -822,29 +819,18 @@ function EmploymentCard({
                 mode='single'
                 selected={endDate}
                 onSelect={(date) => date && setEndDate(date)}
+                disabled={{ before: parseLocalDate(emp.start_date) }}
                 className='rounded-lg border border-border p-2'
               />
             </div>
-            <p className='text-sm font-medium'>퇴직 사유</p>
-            <Select value={endReason} onValueChange={setEndReason}>
-              <SelectTrigger>
-                <SelectValue placeholder='사유를 선택하세요' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='졸업'>졸업</SelectItem>
-                <SelectItem value='계약만료'>계약 만료</SelectItem>
-                <SelectItem value='자진퇴사'>자진 퇴사</SelectItem>
-                <SelectItem value='권고사직'>권고 사직</SelectItem>
-                <SelectItem value='기타'>기타</SelectItem>
-              </SelectContent>
-            </Select>
-            {endReason === '기타' && (
-              <Input
-                placeholder='사유를 직접 입력하세요'
-                value={endReasonEtc}
-                onChange={(e) => setEndReasonEtc(e.target.value)}
-              />
-            )}
+            <ReasonSelect
+              label='퇴직 사유'
+              options={RESIGNATION_REASONS}
+              value={endReason}
+              onChange={setEndReason}
+              etcValue={endReasonEtc}
+              onEtcChange={setEndReasonEtc}
+            />
           </div>
           <DialogFooter>
             <Button variant='outline' onClick={() => setEndDialogOpen(false)}>
@@ -855,31 +841,13 @@ function EmploymentCard({
         </DialogContent>
       </Dialog>
 
-      <CareerOverlapDialog
-        open={overlapInfos.length > 0}
-        onOpenChange={(open) => {
-          if (!open) {
-            setOverlapInfos([])
-            setOverlapNewStart(null)
-          }
-        }}
-        overlaps={overlapInfos}
-        adjustedEndDate={
-          overlapNewStart
-            ? toDateStr(new Date(overlapNewStart.getTime() - 86400000))
-            : null
-        }
-        onSaveAnyway={async () => {
-          setOverlapInfos([])
-          setOverlapNewStart(null)
-          try {
-            await doSave()
-          } catch {
-            toast({ variant: 'destructive', title: '저장에 실패했습니다.' })
-          }
-        }}
-        onAdjustAndSave={handleAdjustAndSave}
-      />
+      {pendingOverlaps && (
+        <OverlapConfirmDialog
+          overlaps={pendingOverlaps}
+          onConfirm={() => applyOverlapsAndSave(pendingOverlaps)}
+          onCancel={() => setPendingOverlaps(null)}
+        />
+      )}
     </div>
   )
 }
@@ -903,8 +871,7 @@ function AddCareerCard({
   const [companyId, setCompanyId] = useState<number | null>(null)
   const [jobId, setJobId] = useState<number | null>(null)
   const [autoEmployment, setAutoEmployment] = useState(false)
-  const [overlapInfos, setOverlapInfos] = useState<OverlapInfo[]>([])
-  const [overlapNewStart, setOverlapNewStart] = useState<Date | null>(null)
+  const [pendingOverlaps, setPendingOverlaps] = useState<OverlapTarget[] | null>(null)
 
   const { data: companies = [], refetch: refetchCompanies } =
     useCompanyListQuery()
@@ -920,8 +887,7 @@ function AddCareerCard({
     setCompanyId(null)
     setJobId(null)
     setAutoEmployment(false)
-    setOverlapInfos([])
-    setOverlapNewStart(null)
+    setPendingOverlaps(null)
     setIsOpen(false)
   }
 
@@ -1000,32 +966,50 @@ function AddCareerCard({
     }
   }
 
+  const applyOverlapsAndAdd = async (overlaps: OverlapTarget[]) => {
+    try {
+      for (const overlap of overlaps) {
+        const adj = overlap.adjustment
+        if (overlap.type === 'field_training') {
+          const t = overlap.target
+          if (adj.kind === 'trim-end') {
+            await ftMutate([{ action: 'update', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+          } else if (adj.kind === 'push-start') {
+            await ftMutate([{ action: 'delete', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: t.start_date, end_date: t.end_date ?? '' } } }])
+            await ftMutate([{ action: 'add', datas: { field_training: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, start_date: toDateStr(adj.newStart), end_date: t.end_date, lead_or_part: t.lead_or_part, created_at: toDateTimeStr(new Date()) } } }])
+          }
+        } else {
+          const t = overlap.target
+          if (adj.kind === 'trim-end') {
+            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: t.start_date, end_date: toDateStr(adj.newEnd) } } }])
+          } else if (adj.kind === 'push-start') {
+            await empMutate([{ action: 'update', datas: { employment_companies: { student_id: studentId, company_id: t.company_id, job_id: t.job_id, original_start_date: t.start_date, start_date: toDateStr(adj.newStart), end_date: t.end_date } } }])
+          }
+        }
+      }
+      setPendingOverlaps(null)
+      await doAdd()
+    } catch {
+      toast({ variant: 'destructive', title: '추가에 실패했습니다.' })
+    }
+  }
+
   const handleAdd = () => {
     if (!careerType || !dateRange?.from || !companyId || !jobId) {
       toast({ variant: 'destructive', title: '누락된 정보가 있습니다.' })
       return
     }
-    try {
-      const newEnd = dateRange.to ?? FAR_FUTURE
-      const overlaps = findAllOverlaps(
-        dateRange.from,
-        newEnd,
-        '',
-        allFT,
-        allEMP
-      )
-      if (overlaps.length > 0) {
-        setOverlapInfos(overlaps)
-        setOverlapNewStart(dateRange.from)
-        return
-      }
-      doAdd()
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: '겹침 확인 중 오류가 발생했습니다.',
-      })
+    const newEnd = dateRange.to ?? FAR_FUTURE
+    const overlaps = checkOverlaps(dateRange.from, newEnd, '', allFT, allEMP)
+    if (overlaps.some((o) => o.adjustment.kind === 'block')) {
+      toast({ variant: 'destructive', title: '기존 기간을 완전히 덮어버려 저장할 수 없습니다.' })
+      return
     }
+    if (overlaps.length > 0) {
+      setPendingOverlaps(overlaps)
+      return
+    }
+    doAdd()
   }
 
   if (!isOpen) {
@@ -1167,85 +1151,13 @@ function AddCareerCard({
         </Button>
       </div>
 
-      <CareerOverlapDialog
-        open={overlapInfos.length > 0}
-        onOpenChange={(open) => {
-          if (!open) {
-            setOverlapInfos([])
-            setOverlapNewStart(null)
-          }
-        }}
-        overlaps={overlapInfos}
-        adjustedEndDate={
-          overlapNewStart
-            ? toDateStr(new Date(overlapNewStart.getTime() - 86400000))
-            : null
-        }
-        onSaveAnyway={() => {
-          setOverlapInfos([])
-          setOverlapNewStart(null)
-          doAdd()
-        }}
-        onAdjustAndSave={async () => {
-          if (!overlapInfos.length || !overlapNewStart) return
-          const adjustedEnd = new Date(overlapNewStart)
-          adjustedEnd.setDate(adjustedEnd.getDate() - 1)
-          const adjustedEndStr = toDateStr(adjustedEnd)
-          try {
-            for (const info of overlapInfos) {
-              if (info.type === 'field_training') {
-                const target = allFT.find(
-                  (f) =>
-                    f.start_date === info.startDate &&
-                    (f.companies?.company_name ?? '') === info.companyName
-                )
-                if (target)
-                  await ftMutate([
-                    {
-                      action: 'update',
-                      datas: {
-                        field_training: {
-                          student_id: studentId,
-                          company_id: target.company_id,
-                          job_id: target.job_id,
-                          start_date: target.start_date,
-                          end_date: adjustedEndStr,
-                        },
-                      },
-                    },
-                  ])
-              } else {
-                const target = allEMP.find(
-                  (e) =>
-                    e.start_date === info.startDate &&
-                    (e.companies?.company_name ?? '') === info.companyName
-                )
-                if (target)
-                  await empMutate([
-                    {
-                      action: 'update',
-                      datas: {
-                        employment_companies: {
-                          student_id: studentId,
-                          company_id: target.company_id,
-                          job_id: target.job_id,
-                          start_date: target.start_date,
-                          end_date: adjustedEndStr,
-                          deleted_at: null,
-                        },
-                      },
-                    },
-                  ])
-              }
-            }
-            setOverlapInfos([])
-            setOverlapNewStart(null)
-            await doAdd()
-          } catch {
-            toast({ variant: 'destructive', title: '처리에 실패했습니다.' })
-          }
-        }}
-      />
+      {pendingOverlaps && (
+        <OverlapConfirmDialog
+          overlaps={pendingOverlaps}
+          onConfirm={() => applyOverlapsAndAdd(pendingOverlaps)}
+          onCancel={() => setPendingOverlaps(null)}
+        />
+      )}
     </div>
   )
 }
