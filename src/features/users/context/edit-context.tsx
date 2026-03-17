@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { UserEditType } from '../data/schema'
 
 export type DetailType =
-  | 'after_courses'
   | 'certificates'
   | 'activities'
   | 'field_training'

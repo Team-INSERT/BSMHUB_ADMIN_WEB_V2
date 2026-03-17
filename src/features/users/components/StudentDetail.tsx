@@ -13,7 +13,6 @@ import { useHandleEmploymentMutation } from '../services/employment-companies/ha
 import { useHandleFieldTrainingMutation } from '../services/field-training/handleFieldTraining'
 import { useUserDetailQuery } from '../services/selectUser'
 import { useUserListQuery } from '../services/seleteUserList'
-import { AfterCourses } from './after-courses'
 import { Employment } from './employment'
 import { FieldTraining } from './field-training'
 import { MiddleSchool } from './middle-school'
@@ -28,11 +27,7 @@ type ValueItemsType = {
   canEdit?: boolean
 }
 
-const componentsMap: Record<DetailType, ValueItemsType> = {
-  after_courses: {
-    label: '방과후 수강과정',
-    component: (data) => <AfterCourses datas={data.student_after_courses} />,
-  },
+const componentsMap: Record<Exclude<DetailType, 'after_courses'>, ValueItemsType> = {
   certificates: {
     label: '취득 자격증',
     component: (data) => (
@@ -145,7 +140,7 @@ export function StudentDetail({ student_id }: { student_id: string }) {
         </CardHeader>
 
         <CardContent className='space-y-5'>
-          {(Object.keys(componentsMap) as DetailType[]).map((key) => {
+          {(Object.keys(componentsMap) as Exclude<DetailType, 'after_courses'>[]).map((key) => {
             return (
               <div key={key}>
                 <div className='mb-2 flex items-center justify-between'>
