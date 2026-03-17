@@ -288,7 +288,7 @@ function FieldTrainingCard({
     }
   }
 
-  const handleEarlyEnd = async (endDate: string, deleteEmployment: boolean) => {
+  const handleEarlyEnd = async (endDate: string, convertToEmployment: boolean) => {
     try {
       await ftMutate([
         {
@@ -304,23 +304,65 @@ function FieldTrainingCard({
           },
         },
       ])
-      if (deleteEmployment) {
+
+      const linkedEmp = allEMP.find(
+        (e) => e.company_id === ft.company_id && e.job_id === ft.job_id
+      )
+
+      if (convertToEmployment) {
+        const newEmpStart = new Date(endDate)
+        newEmpStart.setDate(newEmpStart.getDate() + 1)
+        const newEmpStartStr = toDateStr(newEmpStart)
+        if (linkedEmp) {
+          await empMutate([
+            {
+              action: 'delete',
+              datas: {
+                employment_companies: {
+                  student_id: studentId,
+                  company_id: linkedEmp.company_id,
+                  job_id: linkedEmp.job_id,
+                  start_date: linkedEmp.start_date,
+                  end_date: linkedEmp.end_date,
+                  deleted_at: toDateTimeStr(new Date()),
+                },
+              },
+            },
+          ])
+        }
+        await empMutate([
+          {
+            action: 'add',
+            datas: {
+              employment_companies: {
+                student_id: studentId,
+                company_id: ft.company_id,
+                job_id: ft.job_id,
+                start_date: newEmpStartStr,
+                end_date: null,
+                created_at: toDateTimeStr(new Date()),
+              },
+            },
+          },
+        ])
+      } else if (linkedEmp) {
         await empMutate([
           {
             action: 'delete',
             datas: {
               employment_companies: {
                 student_id: studentId,
-                company_id: ft.company_id,
-                job_id: ft.job_id,
-                start_date: ft.start_date,
-                end_date: null,
-                created_at: new Date().toISOString(),
+                company_id: linkedEmp.company_id,
+                job_id: linkedEmp.job_id,
+                start_date: linkedEmp.start_date,
+                end_date: linkedEmp.end_date,
+                deleted_at: toDateTimeStr(new Date()),
               },
             },
           },
         ])
       }
+
       await invalidate()
       setIsOpen(false)
       toast({ title: '조기종료 처리되었습니다.' })

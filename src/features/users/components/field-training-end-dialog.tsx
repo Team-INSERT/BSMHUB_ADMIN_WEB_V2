@@ -6,10 +6,10 @@ import { Calendar } from '@/components/ui/calendar'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
 } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
 
 export default function FieldTrainingEndDialog({
   open,
@@ -18,12 +18,13 @@ export default function FieldTrainingEndDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onConfirm: (endDate: string, deleteEmployment: boolean) => void
+  onConfirm: (endDate: string, convertToEmployment: boolean) => void
 }) {
   const [updateDate, setUpdateDate] = useState<Date>(new Date())
+  const [convertToEmployment, setConvertToEmployment] = useState(false)
 
   const handleConfirm = () => {
-    onConfirm(formatDate(updateDate), true)
+    onConfirm(formatDate(updateDate), convertToEmployment)
     onOpenChange(false)
   }
 
@@ -32,10 +33,6 @@ export default function FieldTrainingEndDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>현장실습 조기종료</DialogTitle>
-          <DialogDescription>
-            실제 종료일을 선택하세요. 연결된 취업 이력은 자동으로 함께
-            삭제됩니다.
-          </DialogDescription>
         </DialogHeader>
         <div className='flex w-full flex-col gap-3'>
           <p className='text-sm font-medium'>종료일</p>
@@ -45,6 +42,20 @@ export default function FieldTrainingEndDialog({
               selected={updateDate}
               onSelect={(date) => date && setUpdateDate(date)}
               className='rounded-lg border border-border p-2'
+            />
+          </div>
+          <div className='flex items-center justify-between rounded-md border p-3'>
+            <div>
+              <p className='text-sm font-medium'>취업으로 이어지기</p>
+              <p className='text-xs text-muted-foreground'>
+                {convertToEmployment
+                  ? `종료일 다음날(${formatDate(new Date(updateDate.getTime() + 86400000))})부터 취업 이력이 시작됩니다.`
+                  : '연결된 취업 이력이 자동으로 삭제됩니다.'}
+              </p>
+            </div>
+            <Switch
+              checked={convertToEmployment}
+              onCheckedChange={setConvertToEmployment}
             />
           </div>
         </div>
