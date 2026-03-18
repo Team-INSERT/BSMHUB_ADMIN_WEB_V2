@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { User } from '../data/schema'
+import { useUsers } from '../context/users-context'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 
@@ -39,6 +40,7 @@ interface DataTableProps {
 }
 
 export function UsersTable({ columns, data }: DataTableProps) {
+  const { currentRow, setOpenState, setCurrentRow } = useUsers()
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -99,7 +101,16 @@ export function UsersTable({ columns, data }: DataTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
+                  className='group/row cursor-pointer'
+                  onClick={() => {
+                    if (currentRow?.student_id === row.original.student_id) {
+                      setCurrentRow(null)
+                      setOpenState(null)
+                    } else {
+                      setCurrentRow(row.original)
+                      setOpenState('edit')
+                    }
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
