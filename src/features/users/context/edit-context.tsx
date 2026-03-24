@@ -5,9 +5,7 @@ export type DetailType =
   | 'certificates'
   | 'activities'
   | 'career'
-  | 'university'
-  | 'military'
-  | 'middle_school'
+  // | 'middle_school'
 
 interface EditContextType {
   editingSection: DetailType | null

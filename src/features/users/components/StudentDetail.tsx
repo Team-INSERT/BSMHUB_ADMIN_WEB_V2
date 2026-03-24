@@ -12,11 +12,8 @@ import { UserDetailType } from '../data/schema'
 import { useUserDetailQuery } from '../services/selectUser'
 import { useUserListQuery } from '../services/seleteUserList'
 import { Career } from './career'
-import { MiddleSchool } from './middle-school'
-import { MilitaryService } from './military-service'
 import { StudentActivities } from './student-activities'
 import { StudentCertificates } from './student-certificates'
-import { StudentUniversity } from './student-university'
 
 type ValueItemsType = {
   label: string
@@ -51,23 +48,15 @@ const componentsMap: Record<DetailType, ValueItemsType> = {
       <Career
         fieldTraining={data.field_training}
         employment={data.employment_companies}
+        militaryServices={data.military_services}
+        universities={data.student_universities}
       />
     ),
   },
-  university: {
-    label: '대학교 진학',
-    component: (data) => (
-      <StudentUniversity datas={data.student_universities} />
-    ),
-  },
-  military: {
-    label: '병역',
-    component: (data) => <MilitaryService datas={data.military_services} />,
-  },
-  middle_school: {
-    label: '중학교 정보',
-    component: (data) => <MiddleSchool datas={data.student_middle_schools} />,
-  },
+  // middle_school: {
+  //   label: '중학교 정보',
+  //   component: (data) => <MiddleSchool datas={data.student_middle_schools} />,
+  // },
 }
 
 export function StudentDetail({ student_id }: { student_id: string }) {

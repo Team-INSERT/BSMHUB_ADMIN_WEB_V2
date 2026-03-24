@@ -1,26 +1,31 @@
 import { ko } from 'date-fns/locale'
-import {
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { useUsers } from '../context/users-context'
 import { UserDetailType } from '../data/schema'
+import { AddCareerCard } from './add-career-card'
 import { CareerItem } from './career-types'
 import { parseLocalDate, isInRanges } from './career-utils'
-import { FieldTrainingCard } from './field-training-card'
 import { EmploymentCard } from './employment-card'
-import { AddCareerCard } from './add-career-card'
+import { FieldTrainingCard } from './field-training-card'
+import { MilitaryServiceCard } from './military-service-card'
+import { UniversityCard } from './university-card'
 
 export const Career = ({
   fieldTraining,
   employment,
+  militaryServices = [],
+  universities = [],
 }: {
   fieldTraining: UserDetailType['field_training']
   employment: UserDetailType['employment_companies']
+  militaryServices?: UserDetailType['military_services'] | null
+  universities?: UserDetailType['student_universities'] | null
 }) => {
+  const safeMilitaryServices = militaryServices ?? []
+  const safeUniversities = universities ?? []
   const { currentRow } = useUsers()
   const studentId = currentRow?.student_id ?? ''
 
@@ -44,6 +49,13 @@ export const Career = ({
           startDate: new Date(e.start_date),
         })
       ),
+    ...safeMilitaryServices.map(
+      (ms): CareerItem => ({
+        type: 'military_service',
+        data: ms,
+        startDate: new Date(ms.start_date),
+      })
+    ),
   ].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
 
   const ongoingEnd = (startDate: string) => {
@@ -68,7 +80,15 @@ export const Career = ({
       to: e.end_date ? parseLocalDate(e.end_date) : ongoingEnd(e.start_date!),
     }))
 
-  const hasCalendarData = ftRanges.length > 0 || empRanges.length > 0
+  const msRanges = safeMilitaryServices
+    .filter((ms) => ms.start_date)
+    .map((ms) => ({
+      from: parseLocalDate(ms.start_date),
+      to: parseLocalDate(ms.end_date),
+    }))
+
+  const hasCalendarData =
+    ftRanges.length > 0 || empRanges.length > 0 || msRanges.length > 0
 
   return (
     <div className='space-y-5'>
@@ -84,6 +104,10 @@ export const Career = ({
               <span className='inline-block h-3 w-3 rounded-sm bg-blue-300' />
               취업
             </span>
+            <span className='flex items-center gap-1.5'>
+              <span className='inline-block h-3 w-3 rounded-sm bg-purple-300' />
+              군대
+            </span>
           </div>
           <DayPicker
             locale={ko}
@@ -93,6 +117,7 @@ export const Career = ({
             modifiers={{
               fieldTraining: (date) => isInRanges(date, ftRanges),
               employment: (date) => isInRanges(date, empRanges),
+              militaryService: (date) => isInRanges(date, msRanges),
             }}
             modifiersStyles={{
               fieldTraining: {
@@ -101,6 +126,10 @@ export const Career = ({
               },
               employment: {
                 backgroundColor: 'rgb(147 197 253 / 0.6)',
+                borderRadius: 0,
+              },
+              militaryService: {
+                backgroundColor: 'rgb(196 181 253 / 0.6)',
                 borderRadius: 0,
               },
             }}
@@ -153,13 +182,19 @@ export const Career = ({
                 allFT={fieldTraining.filter((f) => !f.deleted_at)}
                 allEMP={employment.filter((e) => !e.deleted_at)}
               />
-            ) : (
+            ) : item.type === 'employment' ? (
               <EmploymentCard
                 key={`emp-${item.data.company_id}-${item.data.job_id}-${item.data.start_date}`}
                 emp={item.data}
                 studentId={studentId}
                 allFT={fieldTraining.filter((f) => !f.deleted_at)}
                 allEMP={employment.filter((e) => !e.deleted_at)}
+              />
+            ) : (
+              <MilitaryServiceCard
+                key={`ms-${item.data.student_id}-${item.data.start_date}`}
+                ms={item.data}
+                studentId={studentId}
               />
             )
           )
@@ -168,8 +203,22 @@ export const Career = ({
           studentId={studentId}
           allFT={fieldTraining.filter((f) => !f.deleted_at)}
           allEMP={employment.filter((e) => !e.deleted_at)}
+          militaryServices={safeMilitaryServices}
         />
       </div>
+
+      {/* 대학교 목록 */}
+      {safeUniversities.length > 0 && (
+        <div className='space-y-2'>
+          {safeUniversities.map((univ) => (
+            <UniversityCard
+              key={`univ-${univ.universities.university_id}`}
+              univ={univ}
+              studentId={studentId}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

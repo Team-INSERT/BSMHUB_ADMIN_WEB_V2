@@ -2,10 +2,13 @@ import { UserDetailType } from '../data/schema'
 
 export type FT = UserDetailType['field_training'][number]
 export type EMP = UserDetailType['employment_companies'][number]
+export type MS = UserDetailType['military_services'][number]
+export type UNIV = UserDetailType['student_universities'][number]
 
 export type CareerItem =
   | { type: 'field_training'; data: FT; startDate: Date }
   | { type: 'employment'; data: EMP; startDate: Date }
+  | { type: 'military_service'; data: MS; startDate: Date }
 
 export type OverlapAdjustment =
   | { kind: 'trim-end'; newEnd: Date }    // 기존 end를 newStart-1로 자름
