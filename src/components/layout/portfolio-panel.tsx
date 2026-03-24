@@ -57,6 +57,19 @@ export const PortfolioPanel = ({ studentId }: PortfolioPanelProps) => {
         </PortfolioSection>
       )}
 
+      {portfolio.projects.length > 0 && (
+        <PortfolioSection title="프로젝트">
+          <div className="space-y-1.5">
+            {portfolio.projects.map((project) => (
+              <div key={project.project_id} className="flex items-center gap-2">
+                <Folder className="h-4 w-4 text-muted-foreground" />
+                <span>{project.project_name}</span>
+              </div>
+            ))}
+          </div>
+        </PortfolioSection>
+      )}
+
       {portfolio.awards.length > 0 && (
         <PortfolioSection title="수상 경력">
           <div className="space-y-2">
@@ -67,19 +80,6 @@ export const PortfolioPanel = ({ studentId }: PortfolioPanelProps) => {
                   <div className="font-medium">{award.competition_name}</div>
                   <div className="text-xs text-muted-foreground">{award.prize}</div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </PortfolioSection>
-      )}
-
-      {portfolio.projects.length > 0 && (
-        <PortfolioSection title="프로젝트">
-          <div className="space-y-1.5">
-            {portfolio.projects.map((project) => (
-              <div key={project.project_id} className="flex items-center gap-2">
-                <Folder className="h-4 w-4 text-muted-foreground" />
-                <span>{project.project_name}</span>
               </div>
             ))}
           </div>
