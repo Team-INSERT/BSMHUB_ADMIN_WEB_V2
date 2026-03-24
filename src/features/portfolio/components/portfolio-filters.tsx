@@ -9,6 +9,9 @@ type PortfolioFiltersProps = {
   departmentFilter: string
   onDepartmentChange: (value: string) => void
   departments: string[]
+  cohortFilter: string
+  onCohortChange: (value: string) => void
+  cohorts: string[]
   dreamJobFilter: string
   onDreamJobChange: (value: string) => void
   dreamJobs: string[]
@@ -24,6 +27,9 @@ export const PortfolioFilters = ({
   departmentFilter,
   onDepartmentChange,
   departments,
+  cohortFilter,
+  onCohortChange,
+  cohorts,
   dreamJobFilter,
   onDreamJobChange,
   dreamJobs,
@@ -60,6 +66,20 @@ export const PortfolioFilters = ({
           {departments.map((dept) => (
             <SelectItem key={dept} value={dept}>
               {dept}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={cohortFilter} onValueChange={onCohortChange}>
+        <SelectTrigger className="w-full sm:w-32">
+          <SelectValue placeholder="전체 기수" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">전체 기수</SelectItem>
+          {cohorts.map((cohort) => (
+            <SelectItem key={cohort} value={cohort}>
+              {cohort}
             </SelectItem>
           ))}
         </SelectContent>
