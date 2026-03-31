@@ -16,7 +16,7 @@ export const MilitaryService = ({
     if (militaryServiceData) {
       const nowDate = new Date()
       const militaryStartDate = new Date(militaryServiceData.start_date)
-      const militaryEndDate = new Date(militaryServiceData.end_date)
+      const militaryEndDate = new Date(militaryServiceData.end_date ?? '')
 
       if (militaryStartDate <= nowDate && nowDate <= militaryEndDate)
         return '복무 중'

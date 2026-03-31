@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import Loader from '@/components/loader'
-import { DetailType, useEditUser } from '../context/edit-context'
+import { useEditUser } from '../context/edit-context'
 import { UserDetailType } from '../data/schema'
 import { useUserDetailQuery } from '../services/selectUser'
 import { useUserListQuery } from '../services/seleteUserList'
@@ -15,13 +15,15 @@ import { Career } from './career'
 import { StudentActivities } from './student-activities'
 import { StudentCertificates } from './student-certificates'
 
+type SectionKey = 'certificates' | 'activities' | 'career'
+
 type ValueItemsType = {
   label: string
   component: (data: UserDetailType) => ReactNode
   canEdit?: boolean
 }
 
-const componentsMap: Record<DetailType, ValueItemsType> = {
+const componentsMap: Record<SectionKey, ValueItemsType> = {
   certificates: {
     label: '취득 자격증',
     component: (data) => (
@@ -99,7 +101,7 @@ export function StudentDetail({ student_id }: { student_id: string }) {
         </CardHeader>
 
         <CardContent className='space-y-5'>
-          {(Object.keys(componentsMap) as DetailType[]).map((key) => {
+          {(Object.keys(componentsMap) as SectionKey[]).map((key) => {
             return (
               <div key={key}>
                 <div className='mb-2 flex items-center justify-between'>

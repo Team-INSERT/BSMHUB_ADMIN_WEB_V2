@@ -77,7 +77,7 @@ export function AddFieldTrainingModal({
       setIsSubmitting(true)
 
       if (type === 'company' && 'company_name' in values) {
-        await insertCompany(values)
+        await insertCompany({ ...values, latitude: null, longitude: null })
         toast({
           title: '회사 추가 성공',
           description: `${values.company_name} 회사가 추가되었습니다.`,

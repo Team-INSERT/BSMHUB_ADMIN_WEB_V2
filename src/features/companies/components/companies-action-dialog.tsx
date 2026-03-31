@@ -65,9 +65,9 @@ export function CompaniesActionDialog({
     const { isEdit: _, ...payload } = value
     try {
       if (isEdit && currentRow) {
-        await updateCompany({ ...payload, company_id: currentRow.company_id })
+        await updateCompany({ ...payload, company_id: currentRow.company_id, latitude: null, longitude: null })
       } else {
-        await insertCompany(payload)
+        await insertCompany({ ...payload, latitude: null, longitude: null })
         form.reset(defaultValues)
       }
     } catch (error) {
