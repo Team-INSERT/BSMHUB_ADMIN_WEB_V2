@@ -450,6 +450,24 @@ export type Database = {
         }
         Relationships: []
       }
+      authenticated_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       certificates: {
         Row: {
           certificate_id: number
@@ -471,33 +489,26 @@ export type Database = {
       chat_messages: {
         Row: {
           content: string
-          conversation_id: string | null
-          created_at: string | null
-          message_id: number
-          sender_profile_id: string
+          id: string
+          room_id: string
+          sender_id: string
+          sent_at: string
         }
         Insert: {
           content: string
-          conversation_id?: string | null
-          created_at?: string | null
-          message_id?: number
-          sender_profile_id: string
+          id: string
+          room_id: string
+          sender_id: string
+          sent_at: string
         }
         Update: {
           content?: string
-          conversation_id?: string | null
-          created_at?: string | null
-          message_id?: number
-          sender_profile_id?: string
+          id?: string
+          room_id?: string
+          sender_id?: string
+          sent_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            referencedRelation: "conversations"
-            referencedColumns: ["conversation_id"]
-          },
-        ]
+        Relationships: []
       }
       companies: {
         Row: {
@@ -506,6 +517,8 @@ export type Database = {
           company_name: string
           hr_manager_name: string | null
           hr_manager_phone: string | null
+          latitude: number | null
+          longitude: number | null
         }
         Insert: {
           company_address?: string | null
@@ -513,6 +526,8 @@ export type Database = {
           company_name: string
           hr_manager_name?: string | null
           hr_manager_phone?: string | null
+          latitude?: number | null
+          longitude?: number | null
         }
         Update: {
           company_address?: string | null
@@ -520,6 +535,8 @@ export type Database = {
           company_name?: string
           hr_manager_name?: string | null
           hr_manager_phone?: string | null
+          latitude?: number | null
+          longitude?: number | null
         }
         Relationships: []
       }
@@ -828,19 +845,19 @@ export type Database = {
       }
       military_services: {
         Row: {
-          end_date: string
+          end_date: string | null
           military_service_status_id: number
           start_date: string
           student_id: string
         }
         Insert: {
-          end_date: string
+          end_date?: string | null
           military_service_status_id: number
           start_date: string
           student_id?: string
         }
         Update: {
-          end_date?: string
+          end_date?: string | null
           military_service_status_id?: number
           start_date?: string
           student_id?: string
@@ -860,11 +877,52 @@ export type Database = {
           },
         ]
       }
+      predictions: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          id: number
+          model_version: string | null
+          prediction_value: number | null
+          student_id: number
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: number
+          model_version?: string | null
+          prediction_value?: number | null
+          student_id: number
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: number
+          model_version?: string | null
+          prediction_value?: number | null
+          student_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_student_id_fkey1"
+            columns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile: {
         Row: {
           created_at: string
           description: string | null
           email: string | null
+          is_official: boolean
           is_team: boolean
           link: string[] | null
           owner: string | null
@@ -876,6 +934,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
+          is_official?: boolean
           is_team: boolean
           link?: string[] | null
           owner?: string | null
@@ -887,6 +946,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
+          is_official?: boolean
           is_team?: boolean
           link?: string[] | null
           owner?: string | null
@@ -906,16 +966,19 @@ export type Database = {
       profile_competitions: {
         Row: {
           competition_id: number
+          id: number
           prize: string
           profile_id: string | null
         }
         Insert: {
           competition_id?: number
+          id?: number
           prize: string
           profile_id?: string | null
         }
         Update: {
           competition_id?: number
+          id?: number
           prize?: string
           profile_id?: string | null
         }
@@ -928,6 +991,34 @@ export type Database = {
           },
           {
             foreignKeyName: "profile_competitions_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profile"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      profile_html_description: {
+        Row: {
+          created_at: string | null
+          html_content: string
+          profile_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          html_content: string
+          profile_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          html_content?: string
+          profile_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_html_description_profile_id_fkey"
             columns: ["profile_id"]
             referencedRelation: "profile"
             referencedColumns: ["profile_id"]
@@ -1036,6 +1127,33 @@ export type Database = {
             referencedColumns: ["profile_id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          nickname: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at: string
+          id: string
+          nickname: string
+          updated_at: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          nickname?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       project_category: {
         Row: {
@@ -1235,6 +1353,57 @@ export type Database = {
           },
         ]
       }
+      rooms: {
+        Row: {
+          broadcast_expires_at: string
+          chat_expires_at: string | null
+          chat_started_at: string | null
+          created_at: string
+          extended_count: number
+          extension_voting_expires_at: string | null
+          guest_agreed_to_extend: boolean
+          guest_user_id: string | null
+          host_agreed_to_extend: boolean
+          host_user_id: string
+          id: string
+          mode: string
+          status: string
+          topic: string
+        }
+        Insert: {
+          broadcast_expires_at: string
+          chat_expires_at?: string | null
+          chat_started_at?: string | null
+          created_at: string
+          extended_count: number
+          extension_voting_expires_at?: string | null
+          guest_agreed_to_extend: boolean
+          guest_user_id?: string | null
+          host_agreed_to_extend: boolean
+          host_user_id: string
+          id: string
+          mode: string
+          status: string
+          topic: string
+        }
+        Update: {
+          broadcast_expires_at?: string
+          chat_expires_at?: string | null
+          chat_started_at?: string | null
+          created_at?: string
+          extended_count?: number
+          extension_voting_expires_at?: string | null
+          guest_agreed_to_extend?: boolean
+          guest_user_id?: string | null
+          host_agreed_to_extend?: boolean
+          host_user_id?: string
+          id?: string
+          mode?: string
+          status?: string
+          topic?: string
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           language: boolean | null
@@ -1395,6 +1564,31 @@ export type Database = {
           },
         ]
       }
+      student_discord: {
+        Row: {
+          created_at: string
+          discord_id: number | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          discord_id?: number | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          discord_id?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_discord_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "student"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       student_jobs: {
         Row: {
           job_id: number
@@ -1460,6 +1654,43 @@ export type Database = {
           },
         ]
       }
+      student_records: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          id: number
+          record_type: string | null
+          student_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          id?: number
+          record_type?: string | null
+          student_id: number
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          id?: number
+          record_type?: string | null
+          student_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_records_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_records_student_id_fkey1"
+            columns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_universities: {
         Row: {
           created_at: string
@@ -1491,6 +1722,33 @@ export type Database = {
           },
         ]
       }
+      students: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: number
+          name: string | null
+          student_hash: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          name?: string | null
+          student_hash: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          name?: string | null
+          student_hash?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       team_member: {
         Row: {
           participant_id: string
@@ -1518,6 +1776,21 @@ export type Database = {
             referencedColumns: ["profile_id"]
           },
         ]
+      }
+      temp: {
+        Row: {
+          email: string
+          student_number: number
+        }
+        Insert: {
+          email: string
+          student_number: number
+        }
+        Update: {
+          email?: string
+          student_number?: number
+        }
+        Relationships: []
       }
       universities: {
         Row: {
@@ -1643,6 +1916,10 @@ export type Database = {
       }
       is_claims_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { team_profile_id: string; user_id: string }
         Returns: boolean
       }
       set_claim: {

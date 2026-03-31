@@ -13,7 +13,7 @@ export type MilitaryServiceEditType = {
     military_service: {
       student_id: string
       start_date: string
-      end_date: string
+      end_date?: string | null
       military_service_status_id: number
       original_start_date?: string
     }
@@ -28,7 +28,6 @@ const handleMilitaryService = async (editDataList: MilitaryServiceEditType) => {
       !data ||
       !data.student_id ||
       !data.start_date ||
-      !data.end_date ||
       !data.military_service_status_id
     ) {
       throw new Error('누락된 군 복무 정보가 있습니다.')
@@ -37,13 +36,13 @@ const handleMilitaryService = async (editDataList: MilitaryServiceEditType) => {
     const insertData: MilitaryServiceInsert = {
       student_id: data.student_id,
       start_date: data.start_date,
-      end_date: data.end_date,
+      end_date: data.end_date ?? null,
       military_service_status_id: data.military_service_status_id,
     }
 
     const updateData: MilitaryServiceUpdate = {
       start_date: data.start_date,
-      end_date: data.end_date,
+      end_date: data.end_date ?? null,
       military_service_status_id: data.military_service_status_id,
     }
 

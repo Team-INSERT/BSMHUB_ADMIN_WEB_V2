@@ -24,7 +24,11 @@ export const Career = ({
   militaryServices?: UserDetailType['military_services'] | null
   universities?: UserDetailType['student_universities'] | null
 }) => {
-  const safeMilitaryServices = militaryServices ?? []
+  const safeMilitaryServices = Array.isArray(militaryServices)
+    ? militaryServices
+    : militaryServices != null
+      ? [militaryServices as UserDetailType['military_services'][number]]
+      : []
   const safeUniversities = universities ?? []
   const { currentRow } = useUsers()
   const studentId = currentRow?.student_id ?? ''
@@ -84,7 +88,7 @@ export const Career = ({
     .filter((ms) => ms.start_date)
     .map((ms) => ({
       from: parseLocalDate(ms.start_date),
-      to: parseLocalDate(ms.end_date),
+      to: ms.end_date ? parseLocalDate(ms.end_date) : new Date(),
     }))
 
   const hasCalendarData =

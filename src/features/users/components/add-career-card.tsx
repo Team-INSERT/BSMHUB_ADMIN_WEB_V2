@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useCompanyListQuery } from '@/features/companies/services/selectCompanyList'
 import { useHandleEmploymentMutation } from '../services/employment-companies/handleEmployment'
@@ -22,7 +21,9 @@ import { useJobListQuery } from '../services/field-training/selectJobList'
 import { useHandleMilitaryServiceMutation } from '../services/military-services/handleMilitaryService'
 import { useMilitaryServiceStatusListQuery } from '../services/military-services/selectMilitaryServiceStatuses'
 import { useHandleStudentUniversityMutation } from '../services/student-universities/handleStudentUniversity'
+import { useUniversityListQuery } from '../services/student-universities/selectUniversityList'
 import { AddFieldTrainingOption } from './add-field-training-option'
+import { AddUniversityOption } from './add-university-option'
 import { checkOverlaps } from './career-overlap'
 import { OverlapConfirmDialog } from './career-overlap-confirm-dialog'
 import { FT, EMP, MS, OverlapTarget, FAR_FUTURE } from './career-types'
@@ -51,13 +52,18 @@ export function AddCareerCard({
     OverlapTarget[] | null
   >(null)
   const [msStatusId, setMsStatusId] = useState<number | null>(null)
-  const [univName, setUnivName] = useState('')
-  const [univDepartment, setUnivDepartment] = useState('')
+  const [msServiceStatus, setMsServiceStatus] = useState<
+    'active' | 'completed' | null
+  >(null)
+  const [selectedUnivName, setSelectedUnivName] = useState<string | null>(null)
+  const [univId, setUnivId] = useState<number | null>(null)
 
   const { data: companies = [], refetch: refetchCompanies } =
     useCompanyListQuery()
   const { data: jobs = [], refetch: refetchJobs } = useJobListQuery()
   const { data: msStatuses = [] } = useMilitaryServiceStatusListQuery()
+  const { data: universities = [], refetch: refetchUniversities } =
+    useUniversityListQuery()
   const { mutateAsync: ftMutate } = useHandleFieldTrainingMutation()
   const { mutateAsync: empMutate } = useHandleEmploymentMutation()
   const { mutateAsync: msMutate } = useHandleMilitaryServiceMutation()
@@ -73,8 +79,9 @@ export function AddCareerCard({
     setAutoEmployment(false)
     setPendingOverlaps(null)
     setMsStatusId(null)
-    setUnivName('')
-    setUnivDepartment('')
+    setMsServiceStatus(null)
+    setSelectedUnivName(null)
+    setUnivId(null)
     setIsOpen(false)
   }
 
@@ -83,11 +90,12 @@ export function AddCareerCard({
 
     // Handle university separately (no date range, no company/job)
     if (careerType === 'university') {
-      if (!univName.trim() || !univDepartment.trim()) {
-        toast({
-          variant: 'destructive',
-          title: '대학교명과 학과명을 입력해주세요.',
-        })
+      if (!selectedUnivName) {
+        toast({ variant: 'destructive', title: '대학교를 선택해주세요.' })
+        return
+      }
+      if (!univId) {
+        toast({ variant: 'destructive', title: '학과를 선택해주세요.' })
         return
       }
       try {
@@ -97,8 +105,7 @@ export function AddCareerCard({
             datas: {
               student_university: {
                 student_id: studentId,
-                university_name: univName.trim(),
-                university_department: univDepartment.trim(),
+                university_id: univId,
               },
             },
           },
@@ -109,22 +116,27 @@ export function AddCareerCard({
         ])
         toast({ title: '추가되었습니다.' })
         reset()
-      } catch {
-        toast({ variant: 'destructive', title: '추가에 실패했습니다.' })
+      } catch (err) {
+        toast({
+          variant: 'destructive',
+          title: '추가에 실패했습니다.',
+          description: err instanceof Error ? err.message : undefined,
+        })
       }
       return
     }
 
     // Handle military service
     if (careerType === 'military_service') {
-      if (!dateRange?.from || !dateRange?.to) {
-        toast({ variant: 'destructive', title: '복무 시작일과 종료일을 모두 선택해주세요.' })
-        return
-      }
       if (!msStatusId) {
         toast({ variant: 'destructive', title: '복무 구분을 선택해주세요.' })
         return
       }
+      if (!msServiceStatus) {
+        toast({ variant: 'destructive', title: '복무 상태를 선택해주세요.' })
+        return
+      }
+      const today = toDateStr(new Date())
       try {
         await msMutate([
           {
@@ -132,8 +144,8 @@ export function AddCareerCard({
             datas: {
               military_service: {
                 student_id: studentId,
-                start_date: toDateStr(dateRange.from),
-                end_date: toDateStr(dateRange.to),
+                start_date: today,
+                end_date: msServiceStatus === 'active' ? null : today,
                 military_service_status_id: msStatusId,
               },
             },
@@ -323,8 +335,12 @@ export function AddCareerCard({
   }
 
   const handleAdd = () => {
-    // university and military_service skip overlap detection
-    if (careerType === 'university' || careerType === 'military_service') {
+    // university and military_service skip date/overlap validation
+    if (careerType === 'university') {
+      doAdd()
+      return
+    }
+    if (careerType === 'military_service') {
       doAdd()
       return
     }
@@ -415,17 +431,6 @@ export function AddCareerCard({
       {careerType === 'military_service' && (
         <>
           <div className='space-y-1.5'>
-            <p className='text-sm font-medium'>복무 기간</p>
-            <div className='flex justify-center'>
-              <Calendar
-                mode='range'
-                selected={dateRange}
-                onSelect={setDateRange}
-                className='rounded-lg border border-border p-2'
-              />
-            </div>
-          </div>
-          <div className='space-y-1.5'>
             <p className='text-sm font-medium'>복무 구분</p>
             <Select onValueChange={(v) => setMsStatusId(Number(v))}>
               <SelectTrigger>
@@ -443,29 +448,89 @@ export function AddCareerCard({
               </SelectContent>
             </Select>
           </div>
+          <div className='space-y-1.5'>
+            <p className='text-sm font-medium'>복무 상태</p>
+            <Select
+              onValueChange={(v) =>
+                setMsServiceStatus(v as 'active' | 'completed')
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder='복무 상태 선택' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='active'>군입대</SelectItem>
+                <SelectItem value='completed'>군복무 완료</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </>
       )}
 
-      {careerType === 'university' && (
-        <>
-          <div className='space-y-1.5'>
-            <p className='text-sm font-medium'>대학교명</p>
-            <Input
-              placeholder='대학교명 입력'
-              value={univName}
-              onChange={(e) => setUnivName(e.target.value)}
-            />
-          </div>
-          <div className='space-y-1.5'>
-            <p className='text-sm font-medium'>학과명</p>
-            <Input
-              placeholder='학과명 입력'
-              value={univDepartment}
-              onChange={(e) => setUnivDepartment(e.target.value)}
-            />
-          </div>
-        </>
-      )}
+      {careerType === 'university' && (() => {
+        const uniqueNames = [
+          ...new Set(universities.map((u) => u.university_name)),
+        ]
+        const filteredDepts = universities.filter(
+          (u) => u.university_name === selectedUnivName
+        )
+        return (
+          <>
+            <div className='space-y-1.5'>
+              <p className='text-sm font-medium'>대학교명</p>
+              <Select
+                value={selectedUnivName ?? ''}
+                onValueChange={(v) => {
+                  setSelectedUnivName(v)
+                  setUnivId(null)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='대학교 선택' />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                  <AddUniversityOption
+                    onSuccess={async (newUniv) => {
+                      await refetchUniversities()
+                      setSelectedUnivName(newUniv.university_name)
+                      setUnivId(newUniv.university_id)
+                    }}
+                  />
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedUnivName && (
+              <div className='space-y-1.5'>
+                <p className='text-sm font-medium'>학과명</p>
+                <Select
+                  value={univId ? String(univId) : ''}
+                  onValueChange={(v) => setUnivId(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='학과 선택' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredDepts.map((u) => (
+                      <SelectItem
+                        key={u.university_id}
+                        value={String(u.university_id)}
+                      >
+                        {u.university_department}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {(careerType === 'field_training' || careerType === 'employment') && (
         <>

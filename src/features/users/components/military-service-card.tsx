@@ -1,12 +1,9 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { DateRange } from 'react-day-picker'
-import { formatDate } from '@/utils/formatDate'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
 import {
   Select,
   SelectContent,
@@ -17,7 +14,7 @@ import {
 import { useHandleMilitaryServiceMutation } from '../services/military-services/handleMilitaryService'
 import { useMilitaryServiceStatusListQuery } from '../services/military-services/selectMilitaryServiceStatuses'
 import { MS } from './career-types'
-import { toDateStr, parseLocalDate } from './career-utils'
+import { toDateStr } from './career-utils'
 
 export function MilitaryServiceCard({
   ms,
@@ -26,12 +23,14 @@ export function MilitaryServiceCard({
   ms: MS
   studentId: string
 }) {
+  // end_date가 null이면 복무 중(군입대), 있으면 전역
+  const isOngoing = ms.end_date === null
+
   const [isOpen, setIsOpen] = useState(false)
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: parseLocalDate(ms.start_date),
-    to: parseLocalDate(ms.end_date),
-  })
   const [statusId, setStatusId] = useState(ms.military_service_status_id)
+  const [serviceStatus, setServiceStatus] = useState<'active' | 'completed'>(
+    isOngoing ? 'active' : 'completed'
+  )
 
   const { data: statuses = [] } = useMilitaryServiceStatusListQuery()
   const { mutateAsync: msMutate } = useHandleMilitaryServiceMutation()
@@ -44,11 +43,6 @@ export function MilitaryServiceCard({
       queryClient.invalidateQueries({ queryKey: [`user-${studentId}`] }),
     ])
 
-  const today = new Date()
-  const startDate = parseLocalDate(ms.start_date)
-  const endDate = parseLocalDate(ms.end_date)
-  const isOngoing = startDate <= today && today <= endDate
-
   const handleSave = async () => {
     try {
       await msMutate([
@@ -57,10 +51,8 @@ export function MilitaryServiceCard({
           datas: {
             military_service: {
               student_id: studentId,
-              start_date: dateRange.from
-                ? toDateStr(dateRange.from)
-                : ms.start_date,
-              end_date: dateRange.to ? toDateStr(dateRange.to) : ms.end_date,
+              start_date: ms.start_date,
+              end_date: serviceStatus === 'active' ? null : toDateStr(new Date()),
               military_service_status_id: statusId,
               original_start_date: ms.start_date,
             },
@@ -109,12 +101,9 @@ export function MilitaryServiceCard({
               군대
             </Badge>
             <span className='font-medium'>
-              {ms.military_service_statuses.military_service_status_name}
+              {ms.military_service_statuses?.military_service_status_name ?? '-'}
             </span>
           </div>
-          <p className='text-sm text-muted-foreground'>
-            {formatDate(ms.start_date)} ~ {formatDate(ms.end_date)}
-          </p>
         </div>
         <div className='flex items-center gap-2'>
           {isOngoing ? (
@@ -134,17 +123,6 @@ export function MilitaryServiceCard({
       {isOpen && (
         <div className='space-y-3 border-t bg-muted/30 p-3'>
           <div className='space-y-1.5'>
-            <p className='text-sm font-medium'>복무 기간</p>
-            <div className='flex justify-center'>
-              <Calendar
-                mode='range'
-                selected={dateRange}
-                onSelect={(r) => r && setDateRange(r)}
-                className='rounded-lg border border-border p-2'
-              />
-            </div>
-          </div>
-          <div className='space-y-1.5'>
             <p className='text-sm font-medium'>복무 구분</p>
             <Select
               value={String(statusId)}
@@ -162,6 +140,23 @@ export function MilitaryServiceCard({
                     {s.military_service_status_name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='space-y-1.5'>
+            <p className='text-sm font-medium'>복무 상태</p>
+            <Select
+              value={serviceStatus}
+              onValueChange={(v) =>
+                setServiceStatus(v as 'active' | 'completed')
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='active'>군입대</SelectItem>
+                <SelectItem value='completed'>군복무 완료</SelectItem>
               </SelectContent>
             </Select>
           </div>
