@@ -1,109 +1,129 @@
-import { Mail, Briefcase, Award, Folder, Link as LinkIcon, Code } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import Loader from '@/components/loader'
 import { useStudentPortfolio } from '@/features/portfolio/hooks/use-student-portfolio'
-import { PortfolioSection } from './portfolio-section'
 
 type PortfolioPanelProps = {
   studentId: string | null
 }
+
+const SectionHeader = ({ title }: { title: string }) => (
+  <div className='flex flex-col gap-[10px]'>
+    <div className='flex items-center gap-[3px]'>
+      <div className='h-[7.7px] w-[7.6px] shrink-0 rounded-[1px] bg-[#0c89cd]' />
+      <span className='text-[13.4px] font-bold leading-[16.7px] text-[#0c89cd] whitespace-nowrap'>
+        {title}
+      </span>
+    </div>
+    <div className='h-px w-full bg-[#0c89cd] opacity-30' />
+  </div>
+)
 
 export const PortfolioPanel = ({ studentId }: PortfolioPanelProps) => {
   const { data: portfolio, isLoading, error } = useStudentPortfolio(studentId)
 
   if (!studentId) return null
   if (isLoading) return <Loader />
-  if (error) return <div className="p-4 text-sm text-muted-foreground">포트폴리오를 불러올 수 없습니다</div>
+  if (error)
+    return (
+      <div className='p-4 text-sm text-muted-foreground'>
+        포트폴리오를 불러올 수 없습니다
+      </div>
+    )
   if (!portfolio) return null
 
   return (
-    <div className="space-y-3 p-4">
-      <div className="space-y-1">
-        <h3 className="text-lg font-semibold">{portfolio.name}</h3>
-        {portfolio.description && <p className="text-sm text-muted-foreground">{portfolio.description}</p>}
-      </div>
+    <div className='flex flex-col gap-6 p-4 w-full'>
+      {/* 프로필 헤더 */}
+      <div className='flex flex-col gap-5'>
+        <div className='flex gap-5 items-center'>
+          {/* 프로필 이미지 자리 */}
+          <div className='h-[140px] w-[110px] shrink-0 rounded bg-muted' />
 
-      <Separator />
+          <div className='flex flex-col justify-between h-[140px] flex-1'>
+            <div className='flex flex-col gap-1.5'>
+              <p className='text-xl font-bold text-foreground'>
+                {portfolio.name}
+              </p>
+              {portfolio.email && (
+                <p className='text-sm text-muted-foreground'>{portfolio.email}</p>
+              )}
+              {portfolio.description && (
+                <p className='text-xs leading-5 text-[#0c89cd] mt-0.5'>
+                  {portfolio.description}
+                </p>
+              )}
+            </div>
 
-      {portfolio.email && (
-        <div className="flex items-center gap-2 text-sm">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-          <span className="truncate">{portfolio.email}</span>
-        </div>
-      )}
-
-      <Separator />
-
-      {portfolio.dreamJob && (
-        <PortfolioSection title="희망 취업 직무" defaultOpen>
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            <span>{portfolio.dreamJob}</span>
-          </div>
-        </PortfolioSection>
-      )}
-
-      {portfolio.skills.length > 0 && (
-        <PortfolioSection title="기술 스택" defaultOpen>
-          <div className="flex flex-wrap gap-1.5">
-            <Code className="h-4 w-4 text-muted-foreground" />
-            {portfolio.skills.map((skill, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs">
-                {skill.skill_name}
-              </Badge>
-            ))}
-          </div>
-        </PortfolioSection>
-      )}
-
-      {portfolio.awards.length > 0 && (
-        <PortfolioSection title="수상 경력">
-          <div className="space-y-2">
-            {portfolio.awards.map((award, idx) => (
-              <div key={idx} className="flex items-start gap-2">
-                <Award className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                <div className="flex-1">
-                  <div className="font-medium">{award.competition_name}</div>
-                  <div className="text-xs text-muted-foreground">{award.prize}</div>
+            {portfolio.dreamJob && (
+              <div className='flex flex-col gap-1'>
+                <div className='flex items-center gap-[3px]'>
+                  <div className='h-[7.7px] w-[7.6px] shrink-0 rounded-[1px] bg-[#0c89cd]' />
+                  <span className='text-[13.4px] font-bold leading-[16.7px] text-[#0c89cd] whitespace-nowrap'>
+                    희망 취업 분야
+                  </span>
                 </div>
+                <p className='text-sm text-foreground'>{portfolio.dreamJob}</p>
               </div>
-            ))}
+            )}
           </div>
-        </PortfolioSection>
-      )}
+        </div>
 
-      {portfolio.projects.length > 0 && (
-        <PortfolioSection title="프로젝트">
-          <div className="space-y-1.5">
-            {portfolio.projects.map((project) => (
-              <div key={project.project_id} className="flex items-center gap-2">
-                <Folder className="h-4 w-4 text-muted-foreground" />
-                <span>{project.project_name}</span>
+        {/* 하단 섹션들 */}
+        <div className='flex flex-col gap-10'>
+          {portfolio.skills.length > 0 && (
+            <div className='flex flex-col gap-3'>
+              <SectionHeader title='언어 / 기술 / 스택' />
+              <p className='text-sm text-foreground'>
+                {portfolio.skills.map((s) => s.skill_name).join(', ')}
+              </p>
+            </div>
+          )}
+
+          {portfolio.awards.length > 0 && (
+            <div className='flex flex-col gap-3'>
+              <SectionHeader title='수상경력' />
+              <div className='flex flex-col text-sm text-foreground'>
+                {portfolio.awards.map((award, idx) => (
+                  <p key={idx} className={idx === 0 ? 'leading-[16.7px]' : 'leading-6 mt-1'}>
+                    ▪ {award.competition_name} {award.prize}
+                  </p>
+                ))}
               </div>
-            ))}
-          </div>
-        </PortfolioSection>
-      )}
+            </div>
+          )}
 
-      {portfolio.links.length > 0 && (
-        <PortfolioSection title="링크">
-          <div className="space-y-1.5">
-            {portfolio.links.map((link, idx) => (
-              <a
-                key={idx}
-                href={link.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-primary hover:underline"
-              >
-                <LinkIcon className="h-4 w-4" />
-                <span className="truncate">{link.alt || link.link}</span>
-              </a>
-            ))}
-          </div>
-        </PortfolioSection>
-      )}
+          {portfolio.projects.length > 0 && (
+            <div className='flex flex-col gap-3'>
+              <SectionHeader title='프로젝트 및 경험' />
+              <div className='flex flex-col text-sm text-foreground'>
+                {portfolio.projects.map((project, idx) => (
+                  <p key={project.project_id} className={idx === 0 ? 'leading-[16.7px]' : 'leading-6 mt-1'}>
+                    ▪ {project.project_name}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {portfolio.links.length > 0 && (
+            <div className='flex flex-col gap-3'>
+              <SectionHeader title='링크' />
+              <div className='flex flex-col gap-1.5'>
+                {portfolio.links.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.link}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-sm text-[#0c89cd] hover:underline truncate'
+                  >
+                    ▪ {link.alt || link.link}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

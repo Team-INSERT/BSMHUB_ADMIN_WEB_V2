@@ -26,6 +26,7 @@ export default function Portfolio() {
   const [searchQuery, setSearchQuery] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [dreamJobFilter, setDreamJobFilter] = useState('all')
+  const [cohortFilter, setCohortFilter] = useState('all')
   const [sortBy, setSortBy] = useState('name')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -47,6 +48,18 @@ export default function Portfolio() {
     ).sort() as string[]
   }, [students])
 
+  // Get unique cohorts
+  const cohorts = useMemo((): string[] => {
+    if (!students) return []
+    return Array.from(
+      new Set(students.map((s: { cohort: string }) => s.cohort))
+    ).sort((a, b) => {
+      const aNum = parseInt(a)
+      const bNum = parseInt(b)
+      return aNum - bNum
+    }) as string[]
+  }, [students])
+
   // Get unique dream jobs
   const dreamJobs = useMemo((): string[] => {
     if (!students) return []
@@ -65,6 +78,7 @@ export default function Portfolio() {
     return students.filter(
       (student: {
         department: string
+        cohort: string
         dreamJob: string | null
         name: string
         email: string | null
@@ -75,6 +89,11 @@ export default function Portfolio() {
           departmentFilter !== 'all' &&
           student.department !== departmentFilter
         ) {
+          return false
+        }
+
+        // Cohort filter
+        if (cohortFilter !== 'all' && student.cohort !== cohortFilter) {
           return false
         }
 
@@ -104,7 +123,7 @@ export default function Portfolio() {
         return true
       }
     )
-  }, [students, searchQuery, departmentFilter, dreamJobFilter])
+  }, [students, searchQuery, departmentFilter, cohortFilter, dreamJobFilter])
 
   // Sort students
   const sortedStudents = useMemo(() => {
@@ -146,6 +165,9 @@ export default function Portfolio() {
             departmentFilter={departmentFilter}
             onDepartmentChange={setDepartmentFilter}
             departments={departments}
+            cohortFilter={cohortFilter}
+            onCohortChange={setCohortFilter}
+            cohorts={cohorts}
             dreamJobFilter={dreamJobFilter}
             onDreamJobChange={setDreamJobFilter}
             dreamJobs={dreamJobs}

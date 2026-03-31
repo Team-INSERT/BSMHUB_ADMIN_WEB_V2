@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import supabase from '@/utils/supabase/client'
+import { getCohort } from '@/utils/users/getCohort'
 import { StudentPortfolio } from '../types/student-portfolio-types'
 
 type ProfileLink = {
@@ -10,6 +11,7 @@ type ProfileLink = {
 type StudentWithDepartment = StudentPortfolio & {
   student_id: string
   department: string
+  cohort: string
 }
 
 export const useAllStudents = () => {
@@ -18,7 +20,7 @@ export const useAllStudents = () => {
     const [studentsResult, profilesResult, studentJobsResult] = await Promise.all([
       supabase
         .from('student')
-        .select('student_id, name, email, departments(department_name)')
+        .select('student_id, name, email, join_at, departments(department_name)')
         .order('name'),
       supabase
         .from('profile')
@@ -100,6 +102,7 @@ export const useAllStudents = () => {
         department:
           (student.departments as Department | null)?.department_name ||
           '미지정',
+        cohort: getCohort(student.join_at),
         dreamJob: dreamJobs.length > 0 ? dreamJobs.join(', ') : null,
         skills:
           rawProfile?.profile_skills?.map((s) => ({
