@@ -41,7 +41,8 @@ export const AfterCourses = ({
         {gradeGroup.map((data) => (
           <div key={data.grade}>
             <span className='font-medium'>{data.grade}학년: </span>
-            {editingSection === 'after_courses' ? (
+            {editingSection !== null &&
+            (editingSection as string) === 'after_courses' ? (
               <div className='mb-2 mt-0.5'>
                 <Select>
                   <SelectTrigger>
