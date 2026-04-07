@@ -138,7 +138,7 @@ export function AddCareerCard({
         toast({ variant: 'destructive', title: '복무 상태를 선택해주세요.' })
         return
       }
-      const today = toDateStr(new Date())
+      const nowIso = new Date().toISOString()
       try {
         await msMutate([
           {
@@ -146,8 +146,8 @@ export function AddCareerCard({
             datas: {
               military_service: {
                 student_id: studentId,
-                start_date: today,
-                end_date: msServiceStatus === 'active' ? null : today,
+                start_date: nowIso,
+                end_date: msServiceStatus === 'active' ? null : nowIso,
                 military_service_status_id: msStatusId,
               },
             },

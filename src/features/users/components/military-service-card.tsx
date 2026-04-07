@@ -14,7 +14,6 @@ import {
 import { useHandleMilitaryServiceMutation } from '../services/military-services/handleMilitaryService'
 import { useMilitaryServiceStatusListQuery } from '../services/military-services/selectMilitaryServiceStatuses'
 import { MS } from './career-types'
-import { toDateStr } from './career-utils'
 
 export function MilitaryServiceCard({
   ms,
@@ -52,7 +51,8 @@ export function MilitaryServiceCard({
             military_service: {
               student_id: studentId,
               start_date: ms.start_date,
-              end_date: serviceStatus === 'active' ? null : toDateStr(new Date()),
+              end_date:
+                serviceStatus === 'active' ? null : new Date().toISOString(),
               military_service_status_id: statusId,
               original_start_date: ms.start_date,
             },
@@ -101,7 +101,8 @@ export function MilitaryServiceCard({
               군대
             </Badge>
             <span className='font-medium'>
-              {ms.military_service_statuses?.military_service_status_name ?? '-'}
+              {ms.military_service_statuses?.military_service_status_name ??
+                '-'}
             </span>
           </div>
         </div>
