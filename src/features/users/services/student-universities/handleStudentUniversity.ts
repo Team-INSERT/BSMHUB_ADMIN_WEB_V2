@@ -7,7 +7,7 @@ export type StudentUniversityEditType = {
     student_university: {
       student_id: string
       university_name?: string
-      university_department?: string
+      university_department?: string | null
       university_id?: number
     }
   }
@@ -32,15 +32,24 @@ const handleStudentUniversity = async (
           // university_id가 직접 주어진 경우 검색 생략
           universityId = data.university_id
         } else {
-          if (!data.university_name || !data.university_department) {
-            throw new Error('대학교명과 학과명을 입력해주세요.')
+          if (!data.university_name) {
+            throw new Error('대학교명을 입력해주세요.')
           }
-          const { data: existing } = await supabase
+          let existingQuery = supabase
             .from('universities')
             .select('university_id')
             .eq('university_name', data.university_name)
-            .eq('university_department', data.university_department)
-            .maybeSingle()
+
+          if (data.university_department) {
+            existingQuery = existingQuery.eq(
+              'university_department',
+              data.university_department
+            )
+          } else {
+            existingQuery = existingQuery.is('university_department', null)
+          }
+
+          const { data: existing } = await existingQuery.maybeSingle()
 
           if (existing) {
             universityId = existing.university_id

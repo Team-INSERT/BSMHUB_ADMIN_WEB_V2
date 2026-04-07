@@ -40,6 +40,7 @@ export function AddCareerCard({
   allEMP: EMP[]
   militaryServices?: MS[]
 }) {
+  const NO_DEPARTMENT_VALUE = '__no_department__'
   const [isOpen, setIsOpen] = useState(false)
   const [careerType, setCareerType] = useState<
     'field_training' | 'employment' | 'military_service' | 'university' | null
@@ -94,10 +95,6 @@ export function AddCareerCard({
         toast({ variant: 'destructive', title: '대학교를 선택해주세요.' })
         return
       }
-      if (!univId) {
-        toast({ variant: 'destructive', title: '학과를 선택해주세요.' })
-        return
-      }
       try {
         await univMutate([
           {
@@ -105,7 +102,12 @@ export function AddCareerCard({
             datas: {
               student_university: {
                 student_id: studentId,
-                university_id: univId,
+                ...(univId
+                  ? { university_id: univId }
+                  : {
+                      university_name: selectedUnivName,
+                      university_department: null,
+                    }),
               },
             },
           },
@@ -467,70 +469,76 @@ export function AddCareerCard({
         </>
       )}
 
-      {careerType === 'university' && (() => {
-        const uniqueNames = [
-          ...new Set(universities.map((u) => u.university_name)),
-        ]
-        const filteredDepts = universities.filter(
-          (u) => u.university_name === selectedUnivName
-        )
-        return (
-          <>
-            <div className='space-y-1.5'>
-              <p className='text-sm font-medium'>대학교명</p>
-              <Select
-                value={selectedUnivName ?? ''}
-                onValueChange={(v) => {
-                  setSelectedUnivName(v)
-                  setUnivId(null)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='대학교 선택' />
-                </SelectTrigger>
-                <SelectContent>
-                  {uniqueNames.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                  <AddUniversityOption
-                    onSuccess={async (newUniv) => {
-                      await refetchUniversities()
-                      setSelectedUnivName(newUniv.university_name)
-                      setUnivId(newUniv.university_id)
-                    }}
-                  />
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedUnivName && (
+      {careerType === 'university' &&
+        (() => {
+          const uniqueNames = [
+            ...new Set(universities.map((u) => u.university_name)),
+          ]
+          const filteredDepts = universities.filter(
+            (u) => u.university_name === selectedUnivName
+          )
+          return (
+            <>
               <div className='space-y-1.5'>
-                <p className='text-sm font-medium'>학과명</p>
+                <p className='text-sm font-medium'>대학교명</p>
                 <Select
-                  value={univId ? String(univId) : ''}
-                  onValueChange={(v) => setUnivId(Number(v))}
+                  value={selectedUnivName ?? ''}
+                  onValueChange={(v) => {
+                    setSelectedUnivName(v)
+                    setUnivId(null)
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder='학과 선택' />
+                    <SelectValue placeholder='대학교 선택' />
                   </SelectTrigger>
                   <SelectContent>
-                    {filteredDepts.map((u) => (
-                      <SelectItem
-                        key={u.university_id}
-                        value={String(u.university_id)}
-                      >
-                        {u.university_department}
+                    {uniqueNames.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
                       </SelectItem>
                     ))}
+                    <AddUniversityOption
+                      onSuccess={async (newUniv) => {
+                        await refetchUniversities()
+                        setSelectedUnivName(newUniv.university_name)
+                        setUnivId(newUniv.university_id)
+                      }}
+                    />
                   </SelectContent>
                 </Select>
               </div>
-            )}
-          </>
-        )
-      })()}
+
+              {selectedUnivName && (
+                <div className='space-y-1.5'>
+                  <p className='text-sm font-medium'>학과명 (선택)</p>
+                  <Select
+                    value={univId ? String(univId) : NO_DEPARTMENT_VALUE}
+                    onValueChange={(v) =>
+                      setUnivId(v === NO_DEPARTMENT_VALUE ? null : Number(v))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='학과 선택 (선택)' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_DEPARTMENT_VALUE}>
+                        선택 안 함
+                      </SelectItem>
+                      {filteredDepts.map((u) => (
+                        <SelectItem
+                          key={u.university_id}
+                          value={String(u.university_id)}
+                        >
+                          {u.university_department ?? '학과 없음'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </>
+          )
+        })()}
 
       {(careerType === 'field_training' || careerType === 'employment') && (
         <>

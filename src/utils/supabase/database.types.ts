@@ -1794,17 +1794,17 @@ export type Database = {
       }
       universities: {
         Row: {
-          university_department: string
+          university_department: string | null
           university_id: number
           university_name: string
         }
         Insert: {
-          university_department: string
+          university_department?: string | null
           university_id?: number
           university_name: string
         }
         Update: {
-          university_department?: string
+          university_department?: string | null
           university_id?: number
           university_name?: string
         }

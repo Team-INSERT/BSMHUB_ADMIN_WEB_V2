@@ -57,14 +57,10 @@ export function UniversityCard({
             </span>
           </div>
           <p className='text-sm text-muted-foreground'>
-            {univ.universities.university_department}
+            {univ.universities.university_department ?? '-'}
           </p>
         </div>
-        <Button
-          variant='destructive'
-          size='sm'
-          onClick={handleDelete}
-        >
+        <Button variant='destructive' size='sm' onClick={handleDelete}>
           삭제
         </Button>
       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import supabase from '@/utils/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,12 +13,11 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import supabase from '@/utils/supabase/client'
 
 export type NewUniversity = {
   university_id: number
   university_name: string
-  university_department: string
+  university_department: string | null
 }
 
 type AddUniversityModalProps = {
@@ -37,21 +37,33 @@ export function AddUniversityModal({
   const queryClient = useQueryClient()
 
   const handleSubmit = async () => {
-    if (!name.trim() || !department.trim()) {
+    const trimmedName = name.trim()
+    const trimmedDepartment = department.trim()
+
+    if (!trimmedName) {
       toast({
         variant: 'destructive',
-        title: '대학교명과 학과명을 입력해주세요.',
+        title: '대학교명을 입력해주세요.',
       })
       return
     }
     setIsSubmitting(true)
     try {
-      const { data: existing } = await supabase
+      let existingQuery = supabase
         .from('universities')
         .select('university_id, university_name, university_department')
-        .eq('university_name', name.trim())
-        .eq('university_department', department.trim())
-        .maybeSingle()
+        .eq('university_name', trimmedName)
+
+      if (trimmedDepartment) {
+        existingQuery = existingQuery.eq(
+          'university_department',
+          trimmedDepartment
+        )
+      } else {
+        existingQuery = existingQuery.is('university_department', null)
+      }
+
+      const { data: existing } = await existingQuery.maybeSingle()
 
       if (existing) {
         onSuccess?.(existing)
@@ -65,8 +77,8 @@ export function AddUniversityModal({
         .from('universities')
         .insert([
           {
-            university_name: name.trim(),
-            university_department: department.trim(),
+            university_name: trimmedName,
+            university_department: trimmedDepartment || null,
           },
         ])
         .select('university_id, university_name, university_department')
@@ -75,12 +87,22 @@ export function AddUniversityModal({
       if (error) {
         // unique constraint 위반 → 이미 존재하는 레코드를 다시 조회
         if (error.code === '23505') {
-          const { data: fallback, error: fetchError } = await supabase
+          let fallbackQuery = supabase
             .from('universities')
             .select('university_id, university_name, university_department')
-            .eq('university_name', name.trim())
-            .eq('university_department', department.trim())
-            .single()
+            .eq('university_name', trimmedName)
+
+          if (trimmedDepartment) {
+            fallbackQuery = fallbackQuery.eq(
+              'university_department',
+              trimmedDepartment
+            )
+          } else {
+            fallbackQuery = fallbackQuery.is('university_department', null)
+          }
+
+          const { data: fallback, error: fetchError } =
+            await fallbackQuery.single()
           if (fetchError) throw new Error(fetchError.message)
           if (!fallback) throw new Error('대학교 정보를 찾을 수 없습니다.')
           onSuccess?.(fallback)
@@ -116,7 +138,7 @@ export function AddUniversityModal({
         <DialogHeader>
           <DialogTitle>새 대학교 추가</DialogTitle>
           <DialogDescription>
-            새로운 대학교와 학과 정보를 입력하세요.
+            새로운 대학교 정보를 입력하세요. 학과명은 선택입니다.
           </DialogDescription>
         </DialogHeader>
         <div className='space-y-4 py-2'>
@@ -129,7 +151,7 @@ export function AddUniversityModal({
             />
           </div>
           <div className='space-y-1.5'>
-            <Label>학과명</Label>
+            <Label>학과명 (선택)</Label>
             <Input
               placeholder='예: 컴퓨터공학과'
               value={department}
