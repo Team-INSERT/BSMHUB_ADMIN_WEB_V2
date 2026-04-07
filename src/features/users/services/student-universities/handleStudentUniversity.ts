@@ -2,13 +2,14 @@ import { useMutation } from '@tanstack/react-query'
 import supabase from '@/utils/supabase/client'
 
 export type StudentUniversityEditType = {
-  action: 'add' | 'delete'
+  action: 'add' | 'update' | 'delete'
   datas: {
     student_university: {
       student_id: string
       university_name?: string
       university_department?: string | null
       university_id?: number
+      end_date?: string | null
     }
   }
 }[]
@@ -88,6 +89,20 @@ const handleStudentUniversity = async (
             created_at: new Date().toISOString(),
           },
         ])
+        if (error) throw new Error(error.message)
+        break
+      }
+      case 'update': {
+        if (!data.university_id) {
+          throw new Error('수정할 대학교 ID가 없습니다.')
+        }
+
+        const { error } = await supabase
+          .from('student_universities')
+          .update({ end_date: data.end_date ?? null })
+          .eq('student_id', data.student_id)
+          .eq('university_id', data.university_id)
+
         if (error) throw new Error(error.message)
         break
       }

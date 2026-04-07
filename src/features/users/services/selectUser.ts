@@ -32,6 +32,7 @@ export const useUserDetailQuery = (
           jobs(*)
         ),
         student_universities(
+          *,
           universities(*)
         ),
         military_services(

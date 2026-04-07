@@ -7,6 +7,17 @@ type BaseType = Database['public']['Tables']
 export type UserSupabase = BaseType['student']['Row']
 export type FieldTrainingType = BaseType['field_training']['Row']
 export type EmploymentCompaniesType = BaseType['employment_companies']['Row']
+export type MilitaryServicesType = BaseType['military_services']['Row']
+export type MilitaryServicesWithStatusType = MergeDeep<
+  Tables<'military_services'>,
+  {
+    military_service_statuses: Pick<
+      Tables<'military_service_statuses'>,
+      'military_service_status_name'
+    > | null
+  }
+>
+export type StudentUniversitiesType = BaseType['student_universities']['Row']
 
 export const userSchema = z.object({
   student_id: z.string(),
@@ -84,9 +95,12 @@ export type UserDetailType = MergeDeep<
         middle_schools: Tables<'middle_schools'>
       }
     >[]
-    student_universities: {
-      universities: Tables<'universities'>
-    }[]
+    student_universities: MergeDeep<
+      Tables<'student_universities'>,
+      {
+        universities: Tables<'universities'>
+      }
+    >[]
   }
 >
 

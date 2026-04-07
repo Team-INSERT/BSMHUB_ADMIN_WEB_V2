@@ -853,7 +853,7 @@ export type Database = {
         Insert: {
           end_date?: string | null
           military_service_status_id: number
-          start_date: string
+          start_date?: string
           student_id?: string
         }
         Update: {
@@ -1694,16 +1694,19 @@ export type Database = {
       student_universities: {
         Row: {
           created_at: string
+          end_date: string | null
           student_id: string
           university_id: number
         }
         Insert: {
           created_at?: string
+          end_date?: string | null
           student_id: string
           university_id?: number
         }
         Update: {
           created_at?: string
+          end_date?: string | null
           student_id?: string
           university_id?: number
         }
